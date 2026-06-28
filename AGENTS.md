@@ -1,7 +1,17 @@
 # Agent 须知（Frenchfinity OpenSCAD）
 
 记录会让 agent 踩雷的、不可从常识推导的点。改动相关代码前请先读。
-详细逆向背景见 `docs/reverse-engineering-rectangular-tool-holder.md`。
+
+- **移植下一个 1.0 模型**：照 `docs/porting-playbook.md` 走（含待移植清单与命令）。
+- **逆向工具**：`tools/f3d_inspect.py`（从 .f3d 抽参数/预览）、
+  `tools/stl_analyze.py`（bbox 回归 / 截面 / 平面特征）。
+- 第一个完整范例：`docs/reverse-engineering-rectangular-tool-holder.md`。
+- 1.0 源文件在 `/Volumes/home/Drive/3D模型/FrenchFinity/`。
+- 远端：`fork` = `crhan/frenchfinity-openscad`（推这里），`origin` = 上游 Bastelsaal。
+  当前工作分支 `rectangular-tool-holder`。
+
+**铁律：STL / 渲染 PNG 绝不进 git**（属构建产物，已 `.gitignore`；样例输出放
+`generated_stl/`，也不提交）。唯一例外是 `frenchfinity-logo.png`。
 
 ## 环境
 

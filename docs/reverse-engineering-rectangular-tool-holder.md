@@ -229,13 +229,14 @@ ground truth 逐项对比：
 的低 X 边量取槽心，2.0 相对 1.0 还存在 §4.4 所述 Y 镜像，故 left/right 同名件物理
 落在相反一侧（center 不受影响）。其余维度全部精确吻合。
 
-视觉对比（左 = 1.0 ground truth，右 = 2.0 OpenSCAD）：
+视觉对比：分别渲染 1.0 ground-truth STL 与 2.0 OpenSCAD 输出的立体图、底视图
+（center/left/right），形状一致——U 形长槽 + 后端卯榫 + 底部贯穿槽随孔位左右平移。
+渲染图属构建产物、不入库；需要时用以下命令复现：
 
-| | 1.0 | 2.0 |
-|---|---|---|
-| 立体 (tw29) | ![](images/gt_center_iso.png) | ![](images/scad_center_iso.png) |
-| 底视 center | ![](images/gt_center_bottom.png) | ![](images/scad_center_bottom.png) |
-| 底视 left | ![](images/gt_left_bottom.png) | ![](images/scad_left_bottom.png) |
+```
+echo 'import("<1.0 或 2.0 的 .stl>");' > /tmp/v.scad
+openscad -o /tmp/v.png --imgsize=440,440 --camera=0,0,0,55,0,25,0 --viewall --autocenter /tmp/v.scad
+```
 
 ---
 

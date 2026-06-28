@@ -1,2 +1,14 @@
 /dist/
 /frenchfinity.json
+
+# Build artifacts / generated previews - never commit STL exports or render PNGs.
+*.stl
+*.3mf
+*.png
+!frenchfinity-logo.png
+/generated_stl/
+
+# OS / tooling junk
+.DS_Store
+__pycache__/
+*.pyc
