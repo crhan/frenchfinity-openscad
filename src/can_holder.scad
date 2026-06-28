@@ -1,124 +1,159 @@
 //
 // Can holder  (a.k.a. can / drill / spray-can holder)
 //
-// Reverse engineered from the Frenchfinity 1.0 "Can-Holder v42.f3d". Functional
-// + key-dimension port (not a vertex clone). Fusion user parameters:
+// Reverse engineered from the Frenchfinity 1.0 "Can-Holder" by measuring the
+// reference STLs cross-section by cross-section (NOT by fitting the bounding box
+// -- an earlier version matched the bbox with a regression but had completely
+// wrong geometry). Fusion user parameters and what they ACTUALLY drive:
 //
-//   can_diameter (cd)  -> bore the can/tube sits in
-//   padding      (p)   -> wall around the bore; sets the width: dx = cd + 2p
-//   can_inset    (ci)  -> how deep the can sits (length along the tilted axis)
-//   padding_left (pl)  -> extra back/base material (depth/height)
+//   can_diameter (cd)  -> the can/tube the bore must fit; bore = cd + clearance
+//   padding      (p)   -> SIDE/front wall around the bore; sets width dx = cd+2*p
+//   can_inset    (ci)  -> bore DEPTH measured along the (tilted) bore axis
+//   padding_left (pl)  -> BACK wall thickness (toward the wall/cleat side)
 //
-// Verified against the 53 reference STLs (tools/stl_analyze.py):
-//   dx = cd + 2p            (R^2 = 1.0, exact)
-//   dz ~= 0.867*ci + ...    (0.867 ~= cos 30deg -> the bore tilts ~30deg so the
-//                            can leans outward away from the wall)
-//   dy ~= 0.94*cd + 0.755*pl + 1.432*p + ...  (multivariate, R^2 ~ 0.997)
-// dy/dz are multivariate fits (functional sizing, not vertex-perfect); dx is exact.
+// Shape (verified against the side cross-sections of 6 reference STLs, isolating
+// each parameter -- the bbox was deliberately NOT used to drive the geometry):
+// a tall UPRIGHT block, width cd+2*p, with a deep blind bore drilled from the
+// TOP and tilted ~9 deg so the can leans outward (top away from the wall, easy
+// to grab). The back wall is vertical, thickness pl, and carries the french
+// cleat at the top; the front face is slanted parallel to the bore axis (top
+// juts forward, bottom recedes), so the FRONT/side walls stay a constant ~p.
+// A solid base (~9 + 0.3*pl) sits below the bore floor; the "-hole-bottom" 1.0
+// variant adds a drain/push-out hole through that base (can_holder_bottom="open").
 //
-// Shape: a vertical back plate carrying the french cleat, with an open-top
-// cylindrical cup (bore = can_diameter, wall = padding) fused in front of it and
-// tilted ~30deg so the can leans up-and-out. The "-hole-bottom" 1.0 export
-// variant (a drain / push-out hole in the cup bottom) is folded into the
-// can_holder_bottom enum.
+// Derived size relations (consequences of the geometry; they track the 1.0 STLs
+// across cd/p/ci/pl variation, each within ~1mm):
+//   dx = cd + 2*p                                   (exact)
+//   dz = ci*cos(tilt) + 0.3*pl + ~13                (within ~1mm)
+//   dy = (cd+clear) + p + pl + ci*sin(tilt) + cleat (within ~1mm)
 //
 // Orientation: cleat at +Y (back), like the other holders.
 //
 
-can_holder_tilt        = 30;   // bore tilt from vertical (deg); cos(30)~=0.867 = dz/ci
-can_holder_plate_depth = 8;    // back plate thickness (Y)
-can_holder_base        = 6;    // solid material below the cup (Z)
-can_holder_drain       = 6;    // bottom drain hole diameter for bottom="open"
+can_holder_tilt      = 9;     // bore tilt from vertical (deg); can leans outward
+can_holder_clearance = 2.4;   // bore = can_diameter + this (fit slack, matches 1.0)
+can_holder_rim       = 4;     // solid lip above the bore opening (high side)
+can_holder_drain     = 6;     // drain hole diameter for bottom = "open"
 
-function can_holder_outer_width() =
+function can_holder_outer_width () =
     can_holder_can_diameter + 2 * can_holder_padding;
 
-// A cylinder (outer cup or inner bore) tilted by can_holder_tilt, leaning the
-// top toward -Y (out, away from the +Y wall). Its base sits at the origin.
-module can_holder_tilted_cylinder (d, h) {
-    rotate([can_holder_tilt, 0, 0])
-        cylinder(d = d, h = h, $fn = 96);
-}
+// solid base height below the bore floor (measured: ~9 + 0.3*pl)
+function can_holder_base () = 9 + 0.3 * can_holder_padding_left;
+
+// total height = base + vertical run of the bore + top lip
+function can_holder_height () =
+    can_holder_base()
+    + can_holder_can_inset * cos(can_holder_tilt)
+    + can_holder_rim;
+
+// back wall Y (vertical, carries the cleat): front wall p + bore + back wall pl.
+function can_holder_depth () =
+    (can_holder_can_diameter + can_holder_clearance)
+    + can_holder_padding             // front wall
+    + can_holder_padding_left;        // back wall (toward the cleat)
+
+// front face Y at height z: B(0,0) at the base, leaning to (-ci*sin(tilt), H) up top
+function can_holder_front_y (z) =
+    -can_holder_can_inset * sin(can_holder_tilt) * z / can_holder_height();
 
 module can_holder_body () {
     w     = can_holder_outer_width();
     cd    = can_holder_can_diameter;
     p     = can_holder_padding;
     ci    = can_holder_can_inset;
-    pl    = can_holder_padding_left;
-    plate = can_holder_plate_depth;
-    base  = can_holder_base;
-    cx    = w / 2;
-
-    // total envelope (matches the regression so the bbox tracks 1.0)
-    h = 0.867 * ci + 0.323 * cd + 0.268 * pl + 1.55 * p + 1.69;
-    d = 0.94 * cd + 0.755 * pl + 1.432 * p + 0.07 * ci + 17.48 - 10.88; // body (cleat adds 10.88)
-
-    // cup centre sits forward of the plate, tilted base near the bottom-front
-    cup_y = d - plate - (cd / 2 + p) * 0.4;
+    T     = can_holder_tilt;
+    bd    = cd + can_holder_clearance;
+    base  = can_holder_base();
+    H     = can_holder_height();
+    D     = can_holder_depth();             // back wall Y
+    yft   = -ci * sin(T);                    // front-top Y (frontmost point)
+    y_bot = bd / 2 + p;                      // bore bottom centre Y
 
     difference () {
-        union () {
-            // vertical back plate (cleat + labels)
-            translate([0, d - plate, 0]) cube([w, plate, h]);
-            // tilted cup, fused to the plate; flattened to the envelope below
-            intersection () {
-                translate([cx, cup_y, base])
-                    can_holder_tilted_cylinder(cd + 2 * p, ci + cd);
-                cube([w, d, h]);          // clip to the envelope (flat bottom/top/back)
-            }
-        }
-        // the bore the can drops into (open top)
-        translate([cx, cup_y, base + 2])
-            can_holder_tilted_cylinder(cd, ci + cd);
-        // bottom drain / push-out hole (1.0 "-hole-bottom" variant)
+        // upright block: vertical back wall (Y=D), slanted front (B->C), flat
+        // top/bottom. Extruded across the full width in X (hook/triangle idiom).
+        rotate([90, 0, 90])
+            linear_extrude(w)
+                polygon([[D, 0], [0, 0], [yft, H], [D, H]]);
+
+        // deep blind bore drilled from the top, tilted so the top leans to -Y
+        translate([w / 2, y_bot, base])
+            rotate([T, 0, 0])
+                cylinder(d = bd, h = ci + can_holder_rim / cos(T) + 10, $fn = 96);
+
+        // drain / push-out hole through the base (1.0 "-hole-bottom" variant)
         if (can_holder_bottom == "open")
-            translate([cx, cup_y, -1])
+            translate([w / 2, y_bot, -1])
                 cylinder(d = can_holder_drain, h = base + 4, $fn = 64);
     }
 }
 
 module can_holder_with_nut () {
-    w  = can_holder_outer_width();
-    cd = can_holder_can_diameter;
-    p  = can_holder_padding;
-    ci = can_holder_can_inset;
-    pl = can_holder_padding_left;
-    plate = can_holder_plate_depth;
-    h = 0.867 * ci + 0.323 * cd + 0.268 * pl + 1.55 * p + 1.69;
-    d = 0.94 * cd + 0.755 * pl + 1.432 * p + 0.07 * ci + 17.48 - 10.88;
+    w = can_holder_outer_width();
+    D = can_holder_depth();
+    H = can_holder_height();
 
     union () {
         can_holder_body();
-        up(h - (frenchfinity_1_0_slot_distance_top * 2))
-            back(d)
+        up(H - (frenchfinity_1_0_slot_distance_top * 2))
+            back(D)
                 nut(w, false);
     }
 }
 
-module can_holder_labels_only () {
-    w  = can_holder_outer_width();
-    cd = can_holder_can_diameter;
-    p  = can_holder_padding;
-    ci = can_holder_can_inset;
-    pl = can_holder_padding_left;
-    plate = can_holder_plate_depth;
-    h = 0.867 * ci + 0.323 * cd + 0.268 * pl + 1.55 * p + 1.69;
-    d = 0.94 * cd + 0.755 * pl + 1.432 * p + 0.07 * ci + 17.48 - 10.88;
+// label lines stacked on the slanted FRONT face, each line placed at the front
+// surface's Y for its own height so it engraves flush despite the slant. Sizing
+// + centring reuse the shared labels.scad helpers (floor + fit guarantees).
+module can_holder_front_labels (lines, z0, z1) {
+    n = len(lines);
+    if (render_text && n > 0) {
+        w      = can_holder_outer_width();
+        rheight = z1 - z0;
+        rwidth  = w;
+        mc     = max([for (s = lines) len(s)]);
+        size   = labelSize(n, mc, rheight, rwidth);
+        if (size > 0.3 && rheight > 2 * TEXT_MARGIN) {
+            pitch = size * TEXT_LINE_K;
+            zt    = labelZTop(n, size, rheight, z0);
+            for (i = [0 : n - 1])
+                let (z = zt - i * pitch)
+                    translate([w / 2, can_holder_front_y(z), z])
+                        xrot(90)
+                            text3d(lines[i], size = size, height = text_depth,
+                                   anchor = CENTER);
+        }
+    }
+}
 
-    // 1.0 stacked v / cd / pl / ci / p on the back plate face; engrave on the
-    // wide back face (X-read) with floor, spilling to the plate front face.
-    labelLines(
-        [
-            final_version_prefix_calculated,
-            str("cd", can_holder_can_diameter),
-            str("pl", can_holder_padding_left),
-            str("ci", can_holder_can_inset),
-            str("p",  can_holder_padding)
-        ],
-        ["x", w / 2, d,         w, 2, h - 17],
-        ["x", w / 2, d - plate, w, 2, h - 17]
-    );
+module can_holder_labels_only () {
+    w = can_holder_outer_width();
+    H = can_holder_height();
+    D = can_holder_depth();
+    base = can_holder_base();
+
+    lines = [
+        final_version_prefix_calculated,
+        str("cd", can_holder_can_diameter),
+        str("pl", can_holder_padding_left),
+        str("ci", can_holder_can_inset),
+        str("p",  can_holder_padding)
+    ];
+
+    // primary front region (below the opening); spill onto the back wall lower
+    // region for parts too small to hold every line at the floor size.
+    z0 = base + 2;
+    z1 = H - can_holder_rim - 2;
+    cap = labelCapacity(z1 - z0);
+    n   = len(lines);
+    if (n <= cap)
+        can_holder_front_labels(lines, z0, z1);
+    else {
+        n1 = ceil(n / 2);
+        can_holder_front_labels([for (i = [0 : n1 - 1]) lines[i]], z0, z1);
+        labelFace([for (i = [n1 : n - 1]) lines[i]],
+                  ["x", w / 2, D, w, base + 2, H - can_holder_rim - 2]);
+    }
 }
 
 module can_holder_with_nut_and_text () {

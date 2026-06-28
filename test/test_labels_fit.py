@@ -17,6 +17,7 @@ Run:  python3 test/test_labels_fit.py
 Exit code 0 = all pass, 1 = a failure.
 """
 
+import math
 import os
 import shutil
 import struct
@@ -223,8 +224,9 @@ def ch_bounds(p):
     ci = p[CH + "can_inset"]
     pl = p[CH + "padding_left"]
     w = cd + 2 * pp
-    h = 0.867 * ci + 0.323 * cd + 0.268 * pl + 1.55 * pp + 1.69
-    # back face X-read: check Z in [0, h] and X in [0, w]
+    # geometry-derived height: base(9+0.3*pl) + ci*cos(tilt=9) + rim(4)
+    h = (9 + 0.3 * pl) + ci * math.cos(math.radians(9)) + 4
+    # front face X-read: check Z in [0, h] and X in [0, w]
     return [(2, 0.0, h), (0, 0.0, w)]
 
 
