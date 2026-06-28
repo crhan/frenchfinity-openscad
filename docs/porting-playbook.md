@@ -81,10 +81,20 @@ python3 test/test_labels_fit.py
 产物）。commit 信息写清做了什么、为什么。推送到 fork（remote `fork` =
 `crhan/frenchfinity-openscad`，origin = 上游）。
 
-## 待移植清单（已扫描出参数名）
+## 待移植清单
 
-| 模型 | User Parameters |
-|---|---|
+原始 9 个清单模型 **已全部移植完成**（见下方"已完成"）。
+
+后来在源目录里又发现 3 个清单外模型（task 15 评估）。它们**尚未移植**，是后续可做的候选：
+
+| 模型 | 源 | User Parameters | 形态 |
+|---|---|---|---|
+| Bit/Drill Holder | `Bit_Drill+Holder...`（= `Frenchfinity-Bit-Holder-f3z` 重复） | r, c, hd, hp, a, h | r×c 网格的斜插钻头/批头孔 |
+| Tape Holder | `Tape+Holder...` | tw, matd, mitd, rd | 胶带卷轴座（最大/最小卷径 + 卷宽） |
+| Triangle Top Holder | `Triangle-Top-Holder.f3z` | 未知（loose f3z，无 STL/模板） | 需开 Fusion 或更深挖 f3d 才能定参数 |
+
+**重复/跳过**：`1740069021_Rectangular-Tool-Holder-f3z`、`Frenchfinity-Bit-Holder-f3z`
+是已移植件的重复；`Screwdriver-Holder-f3z` 即已有的 `screw_driver`。
 
 已完成：
 - rectangular_tool_holder（本手册的范例，见 `reverse-engineering-rectangular-tool-holder.md`）
