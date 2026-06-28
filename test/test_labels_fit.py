@@ -277,11 +277,31 @@ WR_CASES = [
 ]
 
 
+# --------------------------------------------------------------------------
+# Small hole holder suite
+# --------------------------------------------------------------------------
+SH = "small_hole_holder_"
+
+
+def sh_bounds(p):
+    w = max(21, 5 + p[SH + "hole_width"] - 0.5)
+    h = p[SH + "tool_width"] + 5
+    return [(2, 0.0, h), (0, 0.0, w)]
+
+
+SH_CASES = [
+    ("sh_default", dict(hole_width=6, hole_length=8, tool_width=20), False),
+    ("sh_wide",    dict(hole_width=18, hole_length=10, tool_width=30), False),
+    ("sh_text_off", dict(hole_width=6, hole_length=8, tool_width=20, render_text=False), True),
+]
+
+
 SUITES = [
     ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
     ("can_holder",              os.path.join(HERE, "labels_only_can.scad"),    CH,  ch_bounds,  CH_CASES),
     ("hammer_holder",           os.path.join(HERE, "labels_only_hammer.scad"), HM,  hm_bounds,  HM_CASES),
     ("wrench_holder",           os.path.join(HERE, "labels_only_wrench.scad"), WR,  wr_bounds,  WR_CASES),
+    ("small_hole_holder",       os.path.join(HERE, "labels_only_smallhole.scad"), SH, sh_bounds, SH_CASES),
     ("pliers_holder",           os.path.join(HERE, "labels_only_pliers.scad"), PH,  ph_bounds,  PH_CASES),
     ("round_hanging_holder",    os.path.join(HERE, "labels_only_round.scad"),  RHH, rhh_bounds, RHH_CASES),
     ("hook",                    os.path.join(HERE, "labels_only_hook.scad"),   HK,  hk_bounds,  HK_CASES),
