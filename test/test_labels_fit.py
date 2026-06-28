@@ -157,10 +157,35 @@ RHH_CASES = [
 ]
 
 
+# --------------------------------------------------------------------------
+# Hook suite
+# --------------------------------------------------------------------------
+HK = "hook_"
+
+
+def hk_bounds(p):
+    # Labels are on the shank front face (X-Z): check Z in [hd/2, h] and X in
+    # [0, w] (see hook.scad).
+    w = p[HK + "width"]
+    h = p[HK + "height"]
+    hd = p[HK + "diameter"]
+    return [(2, hd / 2, h), (0, 0.0, w)]
+
+
+HK_CASES = [
+    ("hk_default", dict(width=20, height=80,  diameter=34, thickness=6, hook_end_height=10), False),
+    ("hk_narrow",  dict(width=10, height=60,  diameter=20, thickness=5, hook_end_height=10), False),
+    ("hk_tall",    dict(width=20, height=100, diameter=20, thickness=5, hook_end_height=10), False),
+    ("hk_bigbend", dict(width=20, height=80,  diameter=37, thickness=6, hook_end_height=10), False),
+    ("hk_text_off", dict(width=20, height=80, diameter=34, thickness=6, hook_end_height=10, render_text=False), True),
+]
+
+
 SUITES = [
     ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
     ("pliers_holder",           os.path.join(HERE, "labels_only_pliers.scad"), PH,  ph_bounds,  PH_CASES),
     ("round_hanging_holder",    os.path.join(HERE, "labels_only_round.scad"),  RHH, rhh_bounds, RHH_CASES),
+    ("hook",                    os.path.join(HERE, "labels_only_hook.scad"),   HK,  hk_bounds,  HK_CASES),
 ]
 
 AXIS_NAME = {0: "X", 1: "Y", 2: "Z"}

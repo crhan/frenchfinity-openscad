@@ -6,7 +6,7 @@ include <../lib/BOSL2/std.scad>
 //
 
 /* [Feature] */
-feature = "wall_anchor"; //[box, french_plate, grid, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, wall_anchor]
+feature = "wall_anchor"; //[box, french_plate, grid, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, wall_anchor]
 
 /* [Wall anchor] */
 wall_anchor_height                = 60;
@@ -51,6 +51,18 @@ rectangular_tool_holder_tool_slot_height = 10;
 // Width of the front opening and the bottom push-out slot (hhw)
 rectangular_tool_holder_hole_width  = 8;
 rectangular_tool_holder_hole_position = "center"; //[left, center, right]
+
+/* [Hook] */
+// Width of the hook bar (w)
+hook_width           = 20;
+// Overall height, top of shank to the cleat (h)
+hook_height          = 80;
+// Outer diameter of the J bend (hd)
+hook_diameter        = 34;
+// Thickness of the hook bar (t)
+hook_thickness       = 6;
+// How far the upturned tip rises past the bend centre (heh)
+hook_end_height      = 10;
 
 /* [Pliers holder] */
 // Overall height of the holder (h); the body grows downward as this grows
@@ -131,6 +143,7 @@ include <screws.scad>
 include <box.scad>
 include <french_plate.scad>
 include <grid.scad>
+include <hook.scad>
 include <pliers_holder.scad>
 include <rectangular_tool_holder.scad>
 include <round_hanging_holder.scad>
@@ -156,6 +169,7 @@ module render_selected_feature () {
     if (feature == "box")          feature_box();
     if (feature == "french_plate") feature_french_plate();
     if (feature == "grid")         feature_grid();
+    if (feature == "hook")         feature_hook();
     if (feature == "pliers_holder") feature_pliers_holder();
     if (feature == "rectangular_tool_holder") feature_rectangular_tool_holder();
     if (feature == "round_hanging_holder") feature_round_hanging_holder();
