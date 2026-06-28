@@ -296,12 +296,31 @@ SH_CASES = [
 ]
 
 
+# --------------------------------------------------------------------------
+# Einhell battery holder suite
+# --------------------------------------------------------------------------
+EH = "einhell_battery_holder_"
+
+
+def eh_bounds(p):
+    # back body face (X-read): Z in [0, base+channel], X in [0, 55]
+    return [(2, 0.0, 8 + 26), (0, 0.0, 55)]
+
+
+EH_CASES = [
+    ("eh_default", dict(angle=20), False),
+    ("eh_steep",   dict(angle=35), False),
+    ("eh_text_off", dict(angle=20, render_text=False), True),
+]
+
+
 SUITES = [
     ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
     ("can_holder",              os.path.join(HERE, "labels_only_can.scad"),    CH,  ch_bounds,  CH_CASES),
     ("hammer_holder",           os.path.join(HERE, "labels_only_hammer.scad"), HM,  hm_bounds,  HM_CASES),
     ("wrench_holder",           os.path.join(HERE, "labels_only_wrench.scad"), WR,  wr_bounds,  WR_CASES),
     ("small_hole_holder",       os.path.join(HERE, "labels_only_smallhole.scad"), SH, sh_bounds, SH_CASES),
+    ("einhell_battery_holder",  os.path.join(HERE, "labels_only_einhell.scad"), EH, eh_bounds, EH_CASES),
     ("pliers_holder",           os.path.join(HERE, "labels_only_pliers.scad"), PH,  ph_bounds,  PH_CASES),
     ("round_hanging_holder",    os.path.join(HERE, "labels_only_round.scad"),  RHH, rhh_bounds, RHH_CASES),
     ("hook",                    os.path.join(HERE, "labels_only_hook.scad"),   HK,  hk_bounds,  HK_CASES),

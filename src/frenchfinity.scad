@@ -6,7 +6,7 @@ include <../lib/BOSL2/std.scad>
 //
 
 /* [Feature] */
-feature = "wall_anchor"; //[box, can_holder, french_plate, grid, hammer_holder, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, small_hole_holder, wall_anchor, wrench_holder]
+feature = "wall_anchor"; //[box, can_holder, einhell_battery_holder, french_plate, grid, hammer_holder, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, small_hole_holder, wall_anchor, wrench_holder]
 
 /* [Wall anchor] */
 wall_anchor_height                = 60;
@@ -63,6 +63,10 @@ can_holder_can_inset    = 55;
 can_holder_padding_left = 16;
 // Bottom drain / push-out hole (1.0 "-hole-bottom" variant)
 can_holder_bottom       = "closed"; //[closed, open]
+
+/* [Einhell battery holder] */
+// How far the battery cradle leans back from vertical (a)
+einhell_battery_holder_angle = 20;
 
 /* [Hammer holder] */
 // Overall width / back plate width (w)
@@ -189,6 +193,7 @@ include <screws.scad>
 
 include <box.scad>
 include <can_holder.scad>
+include <einhell_battery_holder.scad>
 include <french_plate.scad>
 include <grid.scad>
 include <hammer_holder.scad>
@@ -219,6 +224,7 @@ include <wrench_holder.scad>
 module render_selected_feature () {
     if (feature == "box")          feature_box();
     if (feature == "can_holder")   feature_can_holder();
+    if (feature == "einhell_battery_holder") feature_einhell_battery_holder();
     if (feature == "french_plate") feature_french_plate();
     if (feature == "grid")         feature_grid();
     if (feature == "hammer_holder") feature_hammer_holder();
