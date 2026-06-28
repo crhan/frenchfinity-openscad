@@ -17,9 +17,9 @@
 
 - **BOSL2 子模块默认是空的**。先 `git submodule update --init lib/BOSL2`，否则
   `up/yrot/xrot/left/text3d` 等全是 "unknown module"。
-- **`src/grid.scad` 缺失**（预存问题）：`frenchfinity.scad` 引用了它且调用
-  `feature_grid()`，但文件不在仓库、git 历史里也没有。选 `feature="grid"` 会失败，
-  其它 feature 不受影响。别误以为是自己改坏的。
+- **`src/grid.scad` 已补全**（曾长期缺失、git 历史里也没有，`feature="grid"` 旧版会失败）。
+  现按 1.0 "Grid-Holder v5" 重建为分格收纳盒，参数 `grid_*`（注意内/外壁厚分开：
+  `grid_inner_wall_thickness` / `grid_outer_wall_thickness`，对齐 1.0）。
 - OpenSCAD CLI 默认导出 **ASCII STL**；要二进制加 `--export-format binstl`
   （自写的二进制解析器才能读）。
 - 无法设置导出文件名：靠 `hintFileName()` 打 `ECHO: "filename proposal:"`，手动重命名。

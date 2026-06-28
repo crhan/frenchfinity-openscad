@@ -90,9 +90,11 @@ box_wall_thickness = 2;
 grid_width = 200;
 grid_depth = 50;
 grid_height = 60;
-grid_wall_thickness = 2;
 grid_rows = 4;
 grid_columns = 4;
+// 1.0 keeps the outer shell and inner divider thicknesses separate
+grid_outer_wall_thickness = 2;
+grid_inner_wall_thickness = 2;
 
 /* [Frenchfinity 1.0 slot] */
 frenchfinity_1_0_slot_inner_height     = 8.5;
