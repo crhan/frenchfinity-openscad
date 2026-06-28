@@ -369,7 +369,7 @@ TP = "tape_holder_"
 
 def tp_bounds(p):
     w = p[TP + "tape_width"] + 20
-    h = 0.694 * p[TP + "min_tape_diameter"] + 16.4
+    h = 0.5 * p[TP + "max_tape_diameter"] + 11   # wedge body height
     return [(2, 0.0, h), (0, 0.0, w)]
 
 

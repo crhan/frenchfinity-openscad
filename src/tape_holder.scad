@@ -6,20 +6,23 @@
 //
 //   tape_width       (tw)   -> roll width; sets the slot: dx = tw + 20
 //   max_tape_diameter(matd) -> full roll OD; sets the cradle curve and depth
-//   min_tape_diameter(mitd) -> empty roll OD; sets the body height
-//   rest_diameter    (rd)   -> a small relief at the cradle bottom (rounding)
+//   min_tape_diameter(mitd) -> empty roll OD; (height/headroom reference)
+//   rest_diameter    (rd)   -> the central SPINDLE ROD the roll turns on
 //
-// Verified against the 13 STLs (tools/stl_analyze.py):
+// Verified against the 13 STLs (tools/stl_analyze.py) + the 1.0 iso/side renders:
 //   dx = tape_width + 20            (R^2 = 1.0, exact: roll slot + 10mm walls)
 //   dy = max_tape_diameter + 20.88  (R^2 = 1.0, fits the full roll OD + cleat)
-//   dz ~= 0.69*min_tape_diameter + 16.4  (R^2 = 0.92)
+//   dz ~= 0.5*max_tape_diameter + 11
 //
-// Shape: a block with a concave cylindrical scoop (radius ~matd/2) cut into the
-// top, open toward the front, that the tape roll rests in; a back wall carries
-// the cleat. The roll slot is tw wide between two 10mm side walls. Cleat at +Y.
+// Shape (the earlier port was just a scooped box with NO rod -- non-functional):
+// two tall end walls (horns) flank a tw-wide slot; a concave cradle (radius
+// ~matd/2) is scooped into the slot so the roll nests; a thin SPINDLE ROD of
+// diameter rest_diameter bridges the slot through the roll's core so the roll
+// spins. The lower block carries the cleat at +Y (back) and the labels on the
+// -Y (front) face.
 //
 
-tape_holder_wall = 10;   // side wall each side of the roll (X): dx = tw + 20
+tape_holder_wall = 10;   // end wall each side of the roll (X): dx = tw + 20
 tape_holder_back = 10;   // back wall depth behind the roll (Y) before the cleat
 
 function tape_holder_outer_width () =
@@ -29,7 +32,7 @@ function tape_holder_body_depth () =
     tape_holder_max_tape_diameter + tape_holder_back;
 
 function tape_holder_outer_height () =
-    0.694 * tape_holder_min_tape_diameter + 16.4;
+    0.5 * tape_holder_max_tape_diameter + 11;
 
 module tape_holder_body () {
     w     = tape_holder_outer_width();
@@ -38,20 +41,31 @@ module tape_holder_body () {
     tw    = tape_holder_tape_width;
     wall  = tape_holder_wall;
     matd  = tape_holder_max_tape_diameter;
-    r     = matd / 2;
+    seat  = matd / 2;                       // cradle radius = full roll OD/2
+    yc    = matd / 2;                       // roll centre Y (front of roll at Y=0)
+    zc    = h - 6;                          // roll/rod centre Z (just below back horn)
+    hf    = h - 14;                         // front edge height (wedge slopes down)
 
-    difference () {
-        cube([w, d, h]);
-        // concave scoop the roll sits in: a cylinder (axis X) across the roll
-        // slot, centred toward the front so the back wall stays tall and the
-        // front is scooped open for dispensing. Clamp the radius to the body.
-        rr = min(r, h - 4);
-        translate([wall, d - tape_holder_back - rr, h + rr * 0.15])
+    union () {
+        difference () {
+            // wedge body: tall at the back (cleat), sloping down to a low front,
+            // extruded across the full width (Y=0 front, Y=d back).
+            rotate([90, 0, 90])
+                linear_extrude(w)
+                    polygon([[0, 0], [d, 0], [d, h], [d * 0.65, h], [0, hf]]);
+            // concave cradle scooped into the slot only, so the end walls stay
+            // tall as horns; the roll nests in the valley.
+            translate([wall, yc, zc])
+                rotate([0, 90, 0])
+                    cylinder(r = seat, h = tw, $fn = 160);
+            // open the slot top so the roll drops in / sticks out
+            translate([wall, -1, zc])
+                cube([tw, d + 2, seat + h]);
+        }
+        // central spindle rod the roll core turns on, bridging the slot
+        translate([wall, yc, zc])
             rotate([0, 90, 0])
-                cylinder(r = rr, h = tw, $fn = 128);
-        // open the top above the scoop so the roll drops in
-        translate([wall, -1, h])
-            cube([tw, d + 2, rr + 2]);
+                cylinder(d = tape_holder_rest_diameter, h = tw, $fn = 48);
     }
 }
 
@@ -69,12 +83,13 @@ module tape_holder_with_nut () {
 }
 
 module tape_holder_labels_only () {
-    w = tape_holder_outer_width();
-    d = tape_holder_body_depth();
-    h = tape_holder_outer_height();
+    w  = tape_holder_outer_width();
+    d  = tape_holder_body_depth();
+    h  = tape_holder_outer_height();
+    hf = h - 14;                            // front (wedge) face height
 
-    // 1.0 stacked v / tw / matd / mitd / rd on the front; engrave on the front
-    // face (X-read), floored, spilling to the back face.
+    // Engrave on the low front (X-read, faces -Y, no flip), spilling onto the
+    // left end-wall outer face (Y-read) since the back face carries the cleat.
     labelLines(
         [
             final_version_prefix_calculated,
@@ -83,8 +98,8 @@ module tape_holder_labels_only () {
             str("mitd", tape_holder_min_tape_diameter),
             str("rd",   tape_holder_rest_diameter)
         ],
-        ["x", w / 2, 0, w, 2, h - 2],
-        ["x", w / 2, d, w, 2, h - 16]
+        ["x", w / 2, 0, w, 2, hf - 2],
+        ["y", d / 2, text_depth, d, 2, hf - 2, "left"]
     );
 }
 
