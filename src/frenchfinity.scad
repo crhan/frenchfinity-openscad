@@ -6,7 +6,7 @@ include <../lib/BOSL2/std.scad>
 //
 
 /* [Feature] */
-feature = "wall_anchor"; //[box, french_plate, grid, pliers_holder, rectangular_tool_holder, screw_plate, screw_driver, wall_anchor]
+feature = "wall_anchor"; //[box, french_plate, grid, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, wall_anchor]
 
 /* [Wall anchor] */
 wall_anchor_height                = 60;
@@ -57,6 +57,16 @@ rectangular_tool_holder_hole_position = "center"; //[left, center, right]
 pliers_holder_height        = 80;
 // Width of the central slot cavity that grips the pliers (hd)
 pliers_holder_hole_diameter = 18;
+
+/* [Round hanging holder] */
+// Diameter of the round tool that is cradled (td)
+round_hanging_holder_tool_diameter     = 39;
+// Length of the cradle trough along the tool axis (hd)
+round_hanging_holder_holder_depth      = 21;
+// Width of the slot under the trough, the push-out / hang-through opening (bhw)
+round_hanging_holder_bottom_hole_width = 20;
+// How deep the tool seats into the back wall (id)
+round_hanging_holder_inset_depth       = 3;
 
 /* [Box] */
 box_width          = 50;
@@ -123,6 +133,7 @@ include <french_plate.scad>
 include <grid.scad>
 include <pliers_holder.scad>
 include <rectangular_tool_holder.scad>
+include <round_hanging_holder.scad>
 include <screw_driver.scad>
 include <screw_plate.scad>
 include <wall_anchor.scad>
@@ -147,6 +158,7 @@ module render_selected_feature () {
     if (feature == "grid")         feature_grid();
     if (feature == "pliers_holder") feature_pliers_holder();
     if (feature == "rectangular_tool_holder") feature_rectangular_tool_holder();
+    if (feature == "round_hanging_holder") feature_round_hanging_holder();
     if (feature == "screw_plate")  feature_screw_plate();
     if (feature == "screw_driver") feature_screw_driver();
     if (feature == "wall_anchor")  feature_wall_anchor();

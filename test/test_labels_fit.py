@@ -87,9 +87,10 @@ RTH = "rectangular_tool_holder_"
 
 def rth_bounds(p):
     # Must match src/rectangular_tool_holder.scad: h = tsh + 15, l = tl + 10.
+    # Labels are on the side wall: check Z (height) and Y (length).
     h = p[RTH + "tool_slot_height"] + 15
     l = p[RTH + "tool_length"] + 10
-    return 0.0, h, 0.0, l
+    return [(2, 0.0, h), (1, 0.0, l)]
 
 
 RTH_CASES = [
@@ -119,7 +120,7 @@ def ph_bounds(p):
     body_depth, seat_depth = 80, 54
     h = p[PH + "height"] + base_extra
     seat_top = toe + (h - toe) * seat_frac
-    return 0.0, seat_top, body_depth - seat_depth, body_depth
+    return [(2, 0.0, seat_top), (1, body_depth - seat_depth, body_depth)]
 
 
 PH_CASES = [
@@ -132,10 +133,37 @@ PH_CASES = [
 ]
 
 
+# --------------------------------------------------------------------------
+# Round hanging holder suite
+# --------------------------------------------------------------------------
+RHH = "round_hanging_holder_"
+
+
+def rhh_bounds(p):
+    # Labels are on the solid front wall (the X-Z face): check Z (height) and
+    # X (width). w = td + 10, h = td + 10 (see round_hanging_holder.scad).
+    td = p[RHH + "tool_diameter"]
+    w = td + 10
+    h = td + 10
+    return [(2, 0.0, h), (0, 0.0, w)]
+
+
+RHH_CASES = [
+    ("rhh_default", dict(tool_diameter=39, holder_depth=21, bottom_hole_width=20, inset_depth=5), False),
+    ("rhh_small",   dict(tool_diameter=9,  holder_depth=9,  bottom_hole_width=8,  inset_depth=2.25), False),
+    ("rhh_big",     dict(tool_diameter=60, holder_depth=24, bottom_hole_width=9,  inset_depth=2.25), False),
+    ("rhh_deep",    dict(tool_diameter=39, holder_depth=40, bottom_hole_width=20, inset_depth=4), False),
+    ("rhh_text_off", dict(tool_diameter=39, holder_depth=21, bottom_hole_width=20, inset_depth=5, render_text=False), True),
+]
+
+
 SUITES = [
     ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
     ("pliers_holder",           os.path.join(HERE, "labels_only_pliers.scad"), PH,  ph_bounds,  PH_CASES),
+    ("round_hanging_holder",    os.path.join(HERE, "labels_only_round.scad"),  RHH, rhh_bounds, RHH_CASES),
 ]
+
+AXIS_NAME = {0: "X", 1: "Y", 2: "Z"}
 
 
 def main():
@@ -173,25 +201,21 @@ def main():
                 failures += 1
                 continue
 
-            zmin, zmax, ymin, ymax = bounds(params)
             errs = []
-            if lo[2] < zmin - EPS:
-                errs.append(f"text below region (zmin={lo[2]:.2f} < {zmin})")
-            if hi[2] > zmax + EPS:
-                errs.append(f"text above region (zmax={hi[2]:.2f} > {zmax:.2f})")
-            if lo[1] < ymin - EPS:
-                errs.append(f"text past front (ymin={lo[1]:.2f} < {ymin})")
-            if hi[1] > ymax + EPS:
-                errs.append(f"text past back (ymax={hi[1]:.2f} > {ymax})")
+            report = []
+            for axis, amin, amax in bounds(params):
+                a = AXIS_NAME[axis]
+                if lo[axis] < amin - EPS:
+                    errs.append(f"{a} below region ({lo[axis]:.2f} < {amin:.1f})")
+                if hi[axis] > amax + EPS:
+                    errs.append(f"{a} above region ({hi[axis]:.2f} > {amax:.1f})")
+                report.append(f"{a} {lo[axis]:.2f}..{hi[axis]:.2f}/{amin:.1f}..{amax:.1f}")
 
             if errs:
-                print(f"[FAIL] {name}: " + "; ".join(errs)
-                      + f"  [Z {lo[2]:.2f}..{hi[2]:.2f} in {zmin:.1f}..{zmax:.1f},"
-                      + f" Y {lo[1]:.2f}..{hi[1]:.2f} in {ymin:.1f}..{ymax:.1f}]")
+                print(f"[FAIL] {name}: " + "; ".join(errs) + "  [" + ", ".join(report) + "]")
                 failures += 1
             else:
-                print(f"[PASS] {name}: text fits  Z {lo[2]:.2f}..{hi[2]:.2f}/{zmin:.1f}..{zmax:.1f}"
-                      f"  Y {lo[1]:.2f}..{hi[1]:.2f}/{ymin:.1f}..{ymax:.1f}")
+                print(f"[PASS] {name}: text fits  " + "  ".join(report))
 
     print()
     if failures:
