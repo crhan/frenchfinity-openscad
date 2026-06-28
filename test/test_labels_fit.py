@@ -141,8 +141,8 @@ RHH = "round_hanging_holder_"
 
 
 def rhh_bounds(p):
-    # Labels are on the solid front wall (the X-Z face): check Z (height) and
-    # X (width). w = td + 10, h = td + 10 (see round_hanging_holder.scad).
+    # Labels are on the two side-wall outer faces (Y-read); they fall within the
+    # part envelope, so check Z (height) and X (width). w = td + 10, h = td + 10.
     td = p[RHH + "tool_diameter"]
     w = td + 10
     h = td + 10

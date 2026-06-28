@@ -16,11 +16,14 @@
 //   dy (depth)  = holder_depth + 20.88       (R^2 = 1.0)
 //   dx (width)  = td + 10                     (the cradle is td wide + 5 mm walls)
 //
-// The tool lies in a semicircular trough (radius td/2) that runs front-to-back
-// between a solid front wall (which carries the labels) and a solid back wall
-// (which carries the french cleat). The trough side rails rise to td/2 + 5; the
-// front/back walls rise the full td + 10 so the tool is fully backed. A slot of
-// width bhw under the trough opens it to the bottom.
+// Shape (verified against the 1.0 STL cross sections + iso, NOT the bbox -- the
+// earlier port added a tall FRONT wall the 1.0 does not have, which made it read
+// as a deep closed box): a semicircular trough (radius td/2, axis front-to-back)
+// is cut into the top so its centre sits near the top of the block (tool top ~=
+// block top). The FRONT is OPEN (no front wall) -- the round tool slides in from
+// the front; a single tall BACK wall carries the french cleat. A bhw-wide slot
+// runs under the trough to the bottom (hang-through / push-out). The trough seats
+// id into the back wall. The two short side walls (5 mm) flank the trough.
 //
 // NOTE on dx: across the four reference STLs dx = td + 10 holds for every export
 // with bhw = 20, but the single bhw = 9 export is ~10 mm wider. With only four
@@ -45,39 +48,41 @@ function round_hanging_holder_outer_height() =
 function round_hanging_holder_outer_depth() =
     round_hanging_holder_holder_depth + (round_hanging_holder_end_wall * 2);
 
-// Z of the trough side rails (tool centre sits here, half the tool above them).
-function round_hanging_holder_rail_height() =
-    round_hanging_holder_tool_diameter / 2 + round_hanging_holder_base_extra / 2;
+// Z of the trough centre: the tool seats high so its top reaches the block top.
+function round_hanging_holder_trough_z() =
+    round_hanging_holder_outer_height() - round_hanging_holder_tool_diameter / 2;
 
 module round_hanging_holder_base () {
     w     = round_hanging_holder_outer_width();
     h     = round_hanging_holder_outer_height();
     d     = round_hanging_holder_outer_depth();
-    wall  = round_hanging_holder_side_wall;
     end   = round_hanging_holder_end_wall;
     td    = round_hanging_holder_tool_diameter;
     bhw   = round_hanging_holder_bottom_hole_width;
     id    = round_hanging_holder_inset_depth;
-    rail  = round_hanging_holder_rail_height();
+    zc    = round_hanging_holder_trough_z();
     cx    = w / 2;
-    floor = rail - td / 2;                 // valley floor Z (= base_extra/2)
-    trough_len = d - 2 * end;              // = holder_depth
+    floor = zc - td / 2;                   // trough floor Z
+    back  = d - end;                       // front face of the back wall
 
     difference () {
         cube([w, d, h]);
 
-        // lower the trough between the front/back walls down to the rail height
-        translate([-1, end, rail])
-            cube([w + 2, trough_len, h - rail + 1]);
-
-        // semicircular valley along Y, carving id into the back wall as a seat
-        translate([cx, end, rail])
+        // semicircular trough (axis Y) from the OPEN front to the back wall,
+        // seating id into the back wall.
+        translate([cx, -1, zc])
             rotate([-90, 0, 0])
-                cylinder(h = trough_len + id, r = td / 2, $fn = 128);
+                cylinder(h = back + id + 1, r = td / 2, $fn = 128);
 
-        // bottom slot under the trough: connects the valley floor to the bottom
-        translate([cx - bhw / 2, end, -1])
-            cube([bhw, trough_len, floor + 1]);
+        // open the whole top in front of the back wall: the side walls are cut
+        // down to the trough centre (leaving the tall back/cleat wall), so the
+        // side profile is the 1.0 "solid base + tall back neck" L, not a box.
+        translate([-1, -1, zc])
+            cube([w + 2, back + 1, h - zc + 1]);
+
+        // bhw slot under the trough, front-to-back, down to the bottom
+        translate([cx - bhw / 2, -1, -1])
+            cube([bhw, back + 1, floor + 1]);
     }
 }
 
@@ -101,10 +106,12 @@ module round_hanging_holder_with_nut () {
 // the 1.0 size and spills onto the back wall (below the cleat) if the front
 // cannot hold all five lines at that size.
 module round_hanging_holder_labels_only () {
-    w = round_hanging_holder_outer_width();
-    h = round_hanging_holder_outer_height();
-    d = round_hanging_holder_outer_depth();
+    w  = round_hanging_holder_outer_width();
+    d  = round_hanging_holder_outer_depth();
+    zc = round_hanging_holder_trough_z();
 
+    // The front is open and the back wall carries the cleat, so engrave on the
+    // two side-wall outer faces (Y-read): floored, spilling left -> right.
     labelLines(
         [
             final_version_prefix_calculated,
@@ -113,8 +120,8 @@ module round_hanging_holder_labels_only () {
             str("bhw", round_hanging_holder_bottom_hole_width),
             str("id",  round_hanging_holder_inset_depth)
         ],
-        ["x", w / 2, 0, w, 2, h - 2],
-        ["x", w / 2, d, w, 2, h - 16]
+        ["y", d / 2, text_depth,     d, 2, zc - 2, "left"],
+        ["y", d / 2, w - text_depth, d, 2, zc - 2, "right"]
     );
 }
 
