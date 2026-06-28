@@ -57,12 +57,11 @@ module wall_anchor_with_nut_cutout_and_text () {
 
     difference() {
         wall_anchor_with_nut_cutout();
-        // Front face, adaptively sized to stay between the angled bottom and the
-        // cleat (the old fixed-size loop dropped lines on short anchors).
-        labelBlockVertical(
-            labels, wall_anchor_width / 2, 0,
-            wall_anchor_width, wall_anchor_depth + 2, wall_anchor_height - 16
-        );
+        // Front face between the angled bottom and the cleat, never smaller than
+        // the 1.0 glyph; spill to the back face if a short anchor cannot fit it.
+        labelLines(labels,
+            ["x", wall_anchor_width / 2, 0,                 wall_anchor_width, wall_anchor_depth + 2, wall_anchor_height - 16],
+            ["x", wall_anchor_width / 2, wall_anchor_depth, wall_anchor_width, wall_anchor_depth + 2, wall_anchor_height - 16]);
     }
 }
 

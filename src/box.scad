@@ -40,9 +40,11 @@ module empty_box_with_nut_and_text () {
 
     difference() {
         empty_box_with_nut();
-        // Back face, adaptively sized so every line stays below the cleat and
-        // inside the part (the old fixed-size loop dropped lines on short boxes).
-        labelBlockVertical(labels, box_width / 2, box_depth, box_width, 2, box_height - 17);
+        // Back face below the cleat, never smaller than the 1.0 glyph; spill to
+        // the front wall if a short box cannot hold every line at that size.
+        labelLines(labels,
+            ["x", box_width / 2, box_depth, box_width, 2, box_height - 17],
+            ["x", box_width / 2, 0,         box_width, 2, box_height - 17]);
     }
 }
     

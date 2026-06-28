@@ -104,68 +104,28 @@ module rectangular_tool_holder_with_nut () {
     }
 }
 
-// Engrave one block of label lines on a side wall, reading along the length.
-// The 1.0 Fusion model put its text on the two long side walls (not the back),
-// which are the faces you actually see once the holder is on the wall, so we do
-// the same. side = "right" (+X wall) or "left" (-X wall).
-module rectangular_tool_holder_label_block (lines, side) {
-    w        = rectangular_tool_holder_outer_width();
-    l        = rectangular_tool_holder_outer_length();
-    h        = rectangular_tool_holder_outer_height();
-    engrave  = 1.5;                          // recess depth (1.0 uses ~2 mm)
-    margin   = 1.5;                          // keep the text off the part edges
-    line_k   = 1.4;                          // line pitch as a multiple of glyph size
-    glyph_k  = 1.1;                          // glyph height as a multiple of size (~1.02 measured)
-    char_k   = 0.70;                         // glyph advance per char (~0.66 measured)
-    n        = len(lines);
-    maxchars = max([for (s = lines) len(s)]);
-
-    // Shrink the glyph size (never above text_size) so the whole block always
-    // fits the wall in BOTH directions - short parts have very little height,
-    // so a fixed size would push the lines off the edges. The block height is
-    // glyph_k*size + (n-1)*line_k*size; the width is maxchars*char_k*size.
-    size_fit_h = (h - 2 * margin) / (glyph_k + (n - 1) * line_k);
-    size_fit_w = (l - 2 * margin) / (maxchars * char_k);
-    size       = min(text_size, size_fit_h, size_fit_w);
-    pitch      = size * line_k;
-    glyph_h    = size * glyph_k;
-
-    // text3d is baseline-anchored in the vertical (it grows up from its origin),
-    // so centre the whole block by hand: top line baseline at z0, block spans
-    // [z0 - (n-1)*pitch, z0 + glyph_h].
-    z0 = (h - glyph_h + (n - 1) * pitch) / 2;
-
-    if (render_text)
-        for (i = [0 : n - 1])
-            translate([side == "right" ? w : 0, l / 2, z0 - i * pitch])
-                rotate(side == "right" ? [90, 0, 90] : [90, 0, -90])
-                    text3d(
-                        lines[i],
-                        size   = size,
-                        height = engrave * 2,   // centred in X -> engraves `engrave` deep
-                        anchor = CENTER
-                    );
-}
-
 // All engraving solids, as positives. Single source for the label content so
 // the production model (which subtracts it) and the test harness (which checks
-// it fits) stay in sync. Mirrors the 1.0 layout: version + tool_width on the
-// right wall, the slot dimensions on the left wall.
+// it fits) stay in sync. The 1.0 Fusion model put its text on the two long side
+// walls (the faces you see once it is on the wall): version + tool_width on the
+// right wall, the slot dimensions on the left wall. labelFace floors the glyph
+// at the 1.0 size and centres it on each wall.
 module rectangular_tool_holder_labels_only () {
-    rectangular_tool_holder_label_block(
-        [
-            final_version_prefix_calculated,
-            str("tw", rectangular_tool_holder_tool_width)
-        ],
-        "right"
+    w = rectangular_tool_holder_outer_width();
+    l = rectangular_tool_holder_outer_length();
+    h = rectangular_tool_holder_outer_height();
+
+    labelFace(
+        [final_version_prefix_calculated, str("tw", rectangular_tool_holder_tool_width)],
+        ["y", l / 2, w, l, 1.5, h - 1.5, "right"]
     );
-    rectangular_tool_holder_label_block(
+    labelFace(
         [
             str("tl",  rectangular_tool_holder_tool_length),
             str("tsh", rectangular_tool_holder_tool_slot_height),
             str("hhw", rectangular_tool_holder_hole_width)
         ],
-        "left"
+        ["y", l / 2, 0, l, 1.5, h - 1.5, "left"]
     );
 }
 

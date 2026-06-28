@@ -1,14 +1,15 @@
-// Test harness: exercise the shared adaptive labelBlockVertical directly with a
-// configurable line count and region, so the overflow fix used by every author
-// component (box / french_plate / screw_plate / wall_anchor / screw_driver) is
-// guarded. test_labels_fit.py checks the engraved block stays inside the region.
-// NOT part of the model; -D overridable.
+// Test harness: exercise the shared adaptive labelFace directly with a
+// configurable line count and region, so the floor + fit logic used by every
+// component is guarded. test_labels_fit.py checks the engraved block stays
+// inside the region (when it fits at the floor) and never shrinks below the
+// floor. NOT part of the model; -D overridable.
 
 include <../lib/BOSL2/std.scad>
 
-text_size   = 5;
-render_text = true;
-text_depth  = 1;
+text_size     = 5;
+text_size_min = 3.5;
+render_text   = true;
+text_depth    = 1;
 
 // region / layout parameters (overridable via -D)
 lb_n     = 5;    // number of lines
@@ -20,5 +21,5 @@ lb_yface = 0;    // Y face
 
 include <../src/labels.scad>
 
-lines = [for (i = [0 : lb_n - 1]) str("ln", i, "_abcd")];
-labelBlockVertical(lines, lb_xpos, lb_yface, lb_fw, lb_z0, lb_z1);
+lines = [for (i = [0 : lb_n - 1]) str("ln", i, "_ab")];
+labelFace(lines, ["x", lb_xpos, lb_yface, lb_fw, lb_z0, lb_z1]);

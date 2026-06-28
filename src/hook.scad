@@ -79,55 +79,31 @@ module hook_with_nut () {
     }
 }
 
-// Engrave the labels on the shank's front face (the wide -Y face you see once
-// the hook is mounted). The 1.0 model packed everything onto the shank; we use
-// one short line per value so even a narrow (w = 10) hook stays readable and in
-// bounds. The shank front face is at Y = hd - t.
-module hook_label_block (lines) {
-    w        = hook_width;
-    h        = hook_height;
-    hd       = hook_diameter;
-    t        = hook_thickness;
-    cz       = hd / 2;
-    engrave  = 1.0;
-    margin   = 1.5;
-    line_k   = 1.4;
-    glyph_k  = 1.1;
-    char_k   = 0.70;
-    n        = len(lines);
-    maxchars = max([for (s = lines) len(s)]);
-
-    region_h = h - cz;                 // shank height available for text
-    size_fit_h = (region_h - 2 * margin) / (glyph_k + (n - 1) * line_k);
-    size_fit_w = (w - 2 * margin) / (maxchars * char_k);
-    size       = min(text_size, size_fit_h, size_fit_w);
-    pitch      = size * line_k;
-    glyph_h    = size * glyph_k;
-
-    // centre the block in the shank region [cz, h]
-    z0 = cz + (region_h + glyph_h + (n - 1) * pitch) / 2 - glyph_h;
-
-    if (render_text)
-        for (i = [0 : n - 1])
-            translate([w / 2, hd - t, z0 - i * pitch])
-                rotate([90, 0, 0])
-                    text3d(
-                        lines[i],
-                        size   = size,
-                        height = engrave * 2,
-                        anchor = CENTER
-                    );
-}
-
+// All engraving solids. The 1.0 model packed everything onto the shank; we use
+// one short line per value (v / w / h / hd / t / heh) so even a narrow (w = 10)
+// hook stays readable. labelLines engraves on the shank's front face (the wide
+// -Y face you see once mounted, at Y = hd - t), floors the glyph at the 1.0
+// size, and spills onto the shank back (below the cleat) if six lines do not fit
+// the shank at that size.
 module hook_labels_only () {
-    hook_label_block([
-        final_version_prefix_calculated,
-        str("w",   hook_width),
-        str("h",   hook_height),
-        str("hd",  hook_diameter),
-        str("t",   hook_thickness),
-        str("heh", hook_end_height)
-    ]);
+    w  = hook_width;
+    h  = hook_height;
+    hd = hook_diameter;
+    t  = hook_thickness;
+    cz = hd / 2;
+
+    labelLines(
+        [
+            final_version_prefix_calculated,
+            str("w",   hook_width),
+            str("h",   hook_height),
+            str("hd",  hook_diameter),
+            str("t",   hook_thickness),
+            str("heh", hook_end_height)
+        ],
+        ["x", w / 2, hd - t, w, cz, h - 1.5],
+        ["x", w / 2, hd,     w, cz, h - 16]
+    );
 }
 
 module hook_with_nut_and_text () {

@@ -117,12 +117,11 @@ module screw_driver_holder_without_nut_and_text (base_height, base_width_and_dep
 
     difference() {
         screw_driver_holder_without_nut(base_height, base_width_and_depth);
-        // Front face of the back plate, adaptively sized to stay between the base
-        // and the cleat (the old fixed-size loop dropped lines on short holders).
-        labelBlockVertical(
-            labels, 0, -base_width_and_depth / 2, base_width_and_depth,
-            base_height + 2, base_height + screwdriver_padding_top - 14
-        );
+        // Front face of the back plate, between the base and the cleat, never
+        // smaller than the 1.0 glyph.
+        labelLines(labels,
+            ["x", 0, -base_width_and_depth / 2, base_width_and_depth,
+             base_height + 2, base_height + screwdriver_padding_top - 14]);
     }
 }
 

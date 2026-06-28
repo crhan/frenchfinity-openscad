@@ -79,12 +79,11 @@ module screw_plate_with_screw_holes_and_text () {
 
     difference() {
         screw_plate_with_screw_holes();
-        // Back face, adaptively sized to stay below the cleat and inside the
-        // part (the old fixed-size loop dropped lines on short plates).
-        labelBlockVertical(
-            labels, screw_plate_width / 2, screw_plate_depth,
-            screw_plate_width, 2, screw_plate_height - 16
-        );
+        // Back face below the cleat, never smaller than the 1.0 glyph; spill to
+        // the front face if a short plate cannot hold every line at that size.
+        labelLines(labels,
+            ["x", screw_plate_width / 2, screw_plate_depth, screw_plate_width, 2, screw_plate_height - 16],
+            ["x", screw_plate_width / 2, 0,                 screw_plate_width, 2, screw_plate_height - 16]);
     }
 }
 

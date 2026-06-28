@@ -113,6 +113,11 @@ filament_hole_size = 1.70;
 render_text = true;
 text_depth  = 1;
 text_size   = 5;
+// Smallest engraved glyph we allow. Frenchfinity 1.0 used a fixed ~3.5 mm glyph
+// on every part (measured from the 1.0 STLs); going below that is unreadable and
+// hard to print. Labels shrink only down to this floor, then overflow lines move
+// to the opposite face instead of shrinking further.
+text_size_min = 3.5;
 
 
 /* [Versioning] */

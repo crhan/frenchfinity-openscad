@@ -6,6 +6,8 @@ include <../lib/BOSL2/std.scad>
 
 // --- the few globals the label path reads (normally set in frenchfinity.scad) ---
 text_size      = 5;
+text_size_min = 3.5;
+text_depth     = 1;
 render_text    = true;
 version        = 1;
 version_prefix = "scad";
@@ -18,6 +20,7 @@ hook_thickness  = 6;
 hook_end_height = 10;
 
 // Only the label modules are exercised here; nut()/hintFileName() are not reached.
+include <../src/labels.scad>
 include <../src/hook.scad>
 
 hook_labels_only();

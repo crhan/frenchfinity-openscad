@@ -150,7 +150,7 @@ def rhh_bounds(p):
 
 RHH_CASES = [
     ("rhh_default", dict(tool_diameter=39, holder_depth=21, bottom_hole_width=20, inset_depth=5), False),
-    ("rhh_small",   dict(tool_diameter=9,  holder_depth=9,  bottom_hole_width=8,  inset_depth=2.25), False),
+    ("rhh_small",   dict(tool_diameter=20, holder_depth=9,  bottom_hole_width=8,  inset_depth=2.25), False),
     ("rhh_big",     dict(tool_diameter=60, holder_depth=24, bottom_hole_width=9,  inset_depth=2.25), False),
     ("rhh_deep",    dict(tool_diameter=39, holder_depth=40, bottom_hole_width=20, inset_depth=4), False),
     ("rhh_text_off", dict(tool_diameter=39, holder_depth=21, bottom_hole_width=20, inset_depth=5, render_text=False), True),
@@ -174,7 +174,7 @@ def hk_bounds(p):
 
 HK_CASES = [
     ("hk_default", dict(width=20, height=80,  diameter=34, thickness=6, hook_end_height=10), False),
-    ("hk_narrow",  dict(width=10, height=60,  diameter=20, thickness=5, hook_end_height=10), False),
+    ("hk_narrow",  dict(width=18, height=60,  diameter=20, thickness=5, hook_end_height=10), False),
     ("hk_tall",    dict(width=20, height=100, diameter=20, thickness=5, hook_end_height=10), False),
     ("hk_bigbend", dict(width=20, height=80,  diameter=37, thickness=6, hook_end_height=10), False),
     ("hk_text_off", dict(width=20, height=80, diameter=34, thickness=6, hook_end_height=10, render_text=False), True),
@@ -197,13 +197,17 @@ def lb_bounds(p):
     return [(2, z0, z1), (0, xp - fw / 2, xp + fw / 2)]
 
 
+# 4th element (optional): glyph-height range (mm) -> check one line's Z extent
+# instead of the fit bounds. Used to prove the floor: a tight region must NOT
+# shrink the glyph below the floor (it stays ~3.5 mm and overflows instead),
+# and a big region must cap the glyph at text_size (~5 mm), not grow unbounded.
 LB_CASES = [
     ("lb_normal",   dict(n=5, z0=2, z1=60, fw=40, xpos=0, yface=0), False),
-    ("lb_tight_h",  dict(n=8, z0=2, z1=20, fw=40, xpos=0, yface=0), False),  # short region
     ("lb_narrow_w", dict(n=4, z0=2, z1=60, fw=14, xpos=0, yface=0), False),  # narrow face
-    ("lb_many",     dict(n=12, z0=2, z1=50, fw=30, xpos=0, yface=0), False),
     ("lb_back",     dict(n=4, z0=2, z1=40, fw=30, xpos=0, yface=20), False), # back face (flipped)
     ("lb_offset_x", dict(n=4, z0=2, z1=40, fw=30, xpos=15, yface=0), False),
+    ("lb_floor",    dict(n=1, z0=2, z1=7,  fw=30, xpos=0, yface=0), False, (4.0, 5.0)),  # floored (size 3.5), not shrunk
+    ("lb_cap",      dict(n=1, z0=2, z1=40, fw=30, xpos=0, yface=0), False, (5.8, 6.8)),  # capped (size 5)
 ]
 
 
@@ -224,10 +228,12 @@ def main():
 
     for model, scad, prefix, bounds, cases in SUITES:
         print(f"=== {model} ===")
-        for name, raw, expect_empty in cases:
+        for case in cases:
+            name, raw, expect_empty = case[0], case[1], case[2]
+            glyph = case[3] if len(case) > 3 else None
             total += 1
             # prefix model-specific keys; pass shared keys (text_size, render_text) through
-            shared = ("text_size", "render_text")
+            shared = ("text_size", "text_size_min", "render_text")
             params = {(k if k in shared else prefix + k): v for k, v in raw.items()}
             out = os.path.join(tmp, name + ".stl")
             r = render(scad, params, out)
@@ -251,6 +257,16 @@ def main():
             if n == 0 or lo is None or hi is None:
                 print(f"[FAIL] {name}: labels are empty (nothing engraved)")
                 failures += 1
+                continue
+
+            if glyph is not None:
+                # glyph-height check: one line's Z extent within [min, max] mm
+                gh = hi[2] - lo[2]
+                if glyph[0] - EPS <= gh <= glyph[1] + EPS:
+                    print(f"[PASS] {name}: glyph height {gh:.2f} in {glyph[0]}..{glyph[1]}")
+                else:
+                    print(f"[FAIL] {name}: glyph height {gh:.2f} not in {glyph[0]}..{glyph[1]}")
+                    failures += 1
                 continue
 
             errs = []

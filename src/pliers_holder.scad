@@ -144,59 +144,26 @@ module pliers_holder_with_nut () {
     }
 }
 
-// Engrave the label block on a side wall (the large X faces, which stay solid
-// because the slot is centred). The 1.0 model stacked v / h / hd on one face;
-// we keep them within the always-solid seat rectangle so even the shortest part
-// never pushes a line off the material. side = "right" (+X) or "left" (-X).
-module pliers_holder_label_block (lines, side) {
-    w        = pliers_holder_outer_width();
-    d        = pliers_holder_body_depth;
-    seat     = pliers_holder_seat_depth;
-    stop     = pliers_holder_seat_top();
-    engrave  = 1.5;
-    margin   = 2.0;
-    line_k   = 1.4;
-    glyph_k  = 1.1;
-    char_k   = 0.70;
-    n        = len(lines);
-    maxchars = max([for (s = lines) len(s)]);
-
-    // The text lives inside the seat rectangle: Y in [d - seat, d], Z in [0, stop].
-    region_y = seat;
-    region_z = stop;
-    yc       = d - (seat / 2);
-
-    size_fit_h = (region_z - 2 * margin) / (glyph_k + (n - 1) * line_k);
-    size_fit_w = (region_y - 2 * margin) / (maxchars * char_k);
-    size       = min(text_size, size_fit_h, size_fit_w);
-    pitch      = size * line_k;
-    glyph_h    = size * glyph_k;
-
-    // text3d is baseline anchored vertically: centre the block inside [0, stop].
-    z0 = (region_z + glyph_h + (n - 1) * pitch) / 2 - glyph_h;
-
-    if (render_text)
-        for (i = [0 : n - 1])
-            translate([side == "right" ? w : 0, yc, z0 - i * pitch])
-                rotate(side == "right" ? [90, 0, 90] : [90, 0, -90])
-                    text3d(
-                        lines[i],
-                        size   = size,
-                        height = engrave * 2,
-                        anchor = CENTER
-                    );
-}
-
 // All engraving solids as positives. Single source for the label content so the
-// production model (which subtracts it) and the test harness stay in sync.
+// production model (which subtracts it) and the test harness stay in sync. The
+// labels live inside the always-solid seat rectangle of a side wall (the slot is
+// centred, so the side walls stay solid); labelLines floors the glyph at the 1.0
+// size and spills onto the opposite wall if the right wall cannot hold them all.
 module pliers_holder_labels_only () {
-    pliers_holder_label_block(
+    w    = pliers_holder_outer_width();
+    d    = pliers_holder_body_depth;
+    seat = pliers_holder_seat_depth;
+    stop = pliers_holder_seat_top();
+    yc   = d - (seat / 2);
+
+    labelLines(
         [
             final_version_prefix_calculated,
             str("h",  pliers_holder_height),
             str("hd", pliers_holder_hole_diameter)
         ],
-        "right"
+        ["y", yc, w, seat, 2, stop, "right"],
+        ["y", yc, 0, seat, 2, stop, "left"]
     );
 }
 

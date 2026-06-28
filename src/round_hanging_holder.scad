@@ -96,49 +96,26 @@ module round_hanging_holder_with_nut () {
     }
 }
 
-// Engrave the label block on the front wall (the solid -Y face), the face you
-// see once the holder is mounted. The 1.0 model stacked v / td / hd / bhw / id
-// there. Adaptive sizing keeps every line inside the face for short parts.
-module round_hanging_holder_label_block (lines) {
-    w        = round_hanging_holder_outer_width();
-    h        = round_hanging_holder_outer_height();
-    engrave  = 1.5;
-    margin   = 2.0;
-    line_k   = 1.4;
-    glyph_k  = 1.1;
-    char_k   = 0.70;
-    n        = len(lines);
-    maxchars = max([for (s = lines) len(s)]);
-
-    size_fit_h = (h - 2 * margin) / (glyph_k + (n - 1) * line_k);
-    size_fit_w = (w - 2 * margin) / (maxchars * char_k);
-    size       = min(text_size, size_fit_h, size_fit_w);
-    pitch      = size * line_k;
-    glyph_h    = size * glyph_k;
-
-    // baseline-anchored: centre the block in [0, h]; reads on the -Y face
-    z0 = (h - glyph_h + (n - 1) * pitch) / 2;
-
-    if (render_text)
-        for (i = [0 : n - 1])
-            translate([w / 2, 0, z0 - i * pitch])
-                rotate([90, 0, 0])
-                    text3d(
-                        lines[i],
-                        size   = size,
-                        height = engrave * 2,
-                        anchor = CENTER
-                    );
-}
-
+// All engraving solids. The 1.0 model stacked v / td / hd / bhw / id on the
+// front wall (the -Y face you see once mounted); labelLines floors the glyph at
+// the 1.0 size and spills onto the back wall (below the cleat) if the front
+// cannot hold all five lines at that size.
 module round_hanging_holder_labels_only () {
-    round_hanging_holder_label_block([
-        final_version_prefix_calculated,
-        str("td",  round_hanging_holder_tool_diameter),
-        str("hd",  round_hanging_holder_holder_depth),
-        str("bhw", round_hanging_holder_bottom_hole_width),
-        str("id",  round_hanging_holder_inset_depth)
-    ]);
+    w = round_hanging_holder_outer_width();
+    h = round_hanging_holder_outer_height();
+    d = round_hanging_holder_outer_depth();
+
+    labelLines(
+        [
+            final_version_prefix_calculated,
+            str("td",  round_hanging_holder_tool_diameter),
+            str("hd",  round_hanging_holder_holder_depth),
+            str("bhw", round_hanging_holder_bottom_hole_width),
+            str("id",  round_hanging_holder_inset_depth)
+        ],
+        ["x", w / 2, 0, w, 2, h - 2],
+        ["x", w / 2, d, w, 2, h - 16]
+    );
 }
 
 module round_hanging_holder_with_nut_and_text () {
