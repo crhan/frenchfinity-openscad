@@ -132,7 +132,7 @@ tape_holder_max_tape_diameter = 65;
 // Empty roll outer diameter (mitd)
 tape_holder_min_tape_diameter = 45;
 // Rod diameter relief (rd)
-tape_holder_rod_diameter = 4;
+tape_holder_rest_diameter = 4;
 
 /* [Wrench holder] */
 // Length of the rack out from the wall; more length = more slots (w)

@@ -14,7 +14,7 @@ final_version_prefix_calculated = str("v", version, version_prefix);
 tape_holder_tape_width        = 20;
 tape_holder_max_tape_diameter = 65;
 tape_holder_min_tape_diameter = 45;
-tape_holder_rod_diameter      = 4;
+tape_holder_rest_diameter      = 4;
 
 include <../src/labels.scad>
 include <../src/tape_holder.scad>

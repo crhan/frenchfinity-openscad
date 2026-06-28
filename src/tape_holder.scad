@@ -7,7 +7,7 @@
 //   tape_width       (tw)   -> roll width; sets the slot: dx = tw + 20
 //   max_tape_diameter(matd) -> full roll OD; sets the cradle curve and depth
 //   min_tape_diameter(mitd) -> empty roll OD; sets the body height
-//   rod_diameter     (rd)   -> a small relief at the cradle bottom (rounding)
+//   rest_diameter    (rd)   -> a small relief at the cradle bottom (rounding)
 //
 // Verified against the 13 STLs (tools/stl_analyze.py):
 //   dx = tape_width + 20            (R^2 = 1.0, exact: roll slot + 10mm walls)
@@ -81,7 +81,7 @@ module tape_holder_labels_only () {
             str("tw",   tape_holder_tape_width),
             str("matd", tape_holder_max_tape_diameter),
             str("mitd", tape_holder_min_tape_diameter),
-            str("rd",   tape_holder_rod_diameter)
+            str("rd",   tape_holder_rest_diameter)
         ],
         ["x", w / 2, 0, w, 2, h - 2],
         ["x", w / 2, d, w, 2, h - 16]
@@ -92,7 +92,7 @@ module tape_holder_with_nut_and_text () {
     labels = hintFileName([
         final_version_prefix_calculated,
         [str("tw", tape_holder_tape_width), str("matd", tape_holder_max_tape_diameter)],
-        [str("mitd", tape_holder_min_tape_diameter), str("rd", tape_holder_rod_diameter)]
+        [str("mitd", tape_holder_min_tape_diameter), str("rd", tape_holder_rest_diameter)]
     ]);
 
     difference () {

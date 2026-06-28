@@ -352,10 +352,10 @@ def tp_bounds(p):
 
 
 TP_CASES = [
-    ("tp_default", dict(tape_width=20, max_tape_diameter=65, min_tape_diameter=45, rod_diameter=4), False),
-    ("tp_big",     dict(tape_width=50, max_tape_diameter=130, min_tape_diameter=80, rod_diameter=6), False),
-    ("tp_small",   dict(tape_width=15, max_tape_diameter=60, min_tape_diameter=45, rod_diameter=4), False),
-    ("tp_text_off", dict(tape_width=20, max_tape_diameter=65, min_tape_diameter=45, rod_diameter=4, render_text=False), True),
+    ("tp_default", dict(tape_width=20, max_tape_diameter=65, min_tape_diameter=45, rest_diameter=4), False),
+    ("tp_big",     dict(tape_width=50, max_tape_diameter=130, min_tape_diameter=80, rest_diameter=6), False),
+    ("tp_small",   dict(tape_width=15, max_tape_diameter=60, min_tape_diameter=45, rest_diameter=4), False),
+    ("tp_text_off", dict(tape_width=20, max_tape_diameter=65, min_tape_diameter=45, rest_diameter=4, render_text=False), True),
 ]
 
 
@@ -366,7 +366,8 @@ BH = "bit_holder_"
 
 
 def bh_bounds(p):
-    w = p[BH + "columns"] * (p[BH + "hole_diameter"] + 2 * p[BH + "hole_padding"])
+    # columns share their inner wall: dx = c*hd + (c+1)*hp
+    w = p[BH + "columns"] * p[BH + "hole_diameter"] + (p[BH + "columns"] + 1) * p[BH + "hole_padding"]
     bh = 1.5 * p[BH + "height"] + 10
     return [(2, 0.0, bh), (0, 0.0, w)]
 
