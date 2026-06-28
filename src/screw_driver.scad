@@ -99,12 +99,10 @@ module screw_driver_holder_without_nut (base_height, base_width_and_depth) {
 }
 
 module screw_driver_holder_without_nut_and_text (base_height, base_width_and_depth) {
-    text_box_width = 0;
-    text_y         = base_width_and_depth - 13;
-    labels         = hintFileName([
+    labels = hintFileName([
         final_version_prefix_calculated,
         [
-            str("bh", screwdriver_bottom_height), 
+            str("bh", screwdriver_bottom_height),
             str("hw", screwdriver_handle_width)
         ],
         [
@@ -112,21 +110,19 @@ module screw_driver_holder_without_nut_and_text (base_height, base_width_and_dep
             str("pt", screwdriver_padding_top)
         ],
         [
-            str("sw", screwdriver_stick_width), 
+            str("sw", screwdriver_stick_width),
             str("ih", screwdriver_inset_height)
         ],
     ]);
-    
+
     difference() {
         screw_driver_holder_without_nut(base_height, base_width_and_depth);
-        
-        for (i = [0 : len(labels)-1])
-            labelVertical(
-                labels[i], 
-                text_box_width, 
-                text_y - i * 7,
-                -base_width_and_depth / 2
-            );
+        // Front face of the back plate, adaptively sized to stay between the base
+        // and the cleat (the old fixed-size loop dropped lines on short holders).
+        labelBlockVertical(
+            labels, 0, -base_width_and_depth / 2, base_width_and_depth,
+            base_height + 2, base_height + screwdriver_padding_top - 14
+        );
     }
 }
 

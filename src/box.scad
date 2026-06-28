@@ -26,11 +26,10 @@ module empty_box_with_nut () {
 }
 
 module empty_box_with_nut_and_text () {
-    text_y         = box_height - 28;
-    labels         = hintFileName([
+    labels = hintFileName([
         final_version_prefix_calculated,
         [
-            str("w", box_width), 
+            str("w", box_width),
             str("d", box_depth)
         ],
         [
@@ -38,17 +37,12 @@ module empty_box_with_nut_and_text () {
             str("wt", box_wall_thickness)
         ],
     ]);
-    
+
     difference() {
         empty_box_with_nut();
-        
-        for (i = [0 : len(labels)-1])
-            labelVertical(
-                labels[i], 
-                box_width / 2, 
-                text_y - i * 7,
-                box_depth
-            );
+        // Back face, adaptively sized so every line stays below the cleat and
+        // inside the part (the old fixed-size loop dropped lines on short boxes).
+        labelBlockVertical(labels, box_width / 2, box_depth, box_width, 2, box_height - 17);
     }
 }
     

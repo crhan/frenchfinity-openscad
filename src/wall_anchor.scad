@@ -48,24 +48,21 @@ module wall_anchor_with_nut_cutout () {
 }
 
 module wall_anchor_with_nut_cutout_and_text () {
-    text_box_width = wall_anchor_width / 2;
-    text_y         = wall_anchor_height - 22;
-    labels         = hintFileName([
+    labels = hintFileName([
         final_version_prefix_calculated,
         str("w", wall_anchor_width),
         str("h", wall_anchor_height),
         str("d", wall_anchor_depth)
     ]);
-    
+
     difference() {
         wall_anchor_with_nut_cutout();
-        
-        for (i = [0 : len(labels)-1])
-            labelVertical(
-                labels[i], 
-                text_box_width, 
-                text_y - i * 7
-            );
+        // Front face, adaptively sized to stay between the angled bottom and the
+        // cleat (the old fixed-size loop dropped lines on short anchors).
+        labelBlockVertical(
+            labels, wall_anchor_width / 2, 0,
+            wall_anchor_width, wall_anchor_depth + 2, wall_anchor_height - 16
+        );
     }
 }
 

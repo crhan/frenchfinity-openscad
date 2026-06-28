@@ -66,9 +66,7 @@ module screw_plate_with_screw_holes () {
 }
 
 module screw_plate_with_screw_holes_and_text () {
-    text_box_width = screw_plate_width / 2;
-    text_y         = screw_plate_height - 30;
-    labels         = hintFileName([
+    labels = hintFileName([
         final_version_prefix_calculated,
         str("w",   screw_plate_width),
         str("h",   screw_plate_height),
@@ -78,18 +76,15 @@ module screw_plate_with_screw_holes_and_text () {
         str("shh", screw_plate_screw_head_height),
         str("shp", screw_plate_screw_hole_padding)
     ]);
-    
-    
+
     difference() {
         screw_plate_with_screw_holes();
-        
-        for (i = [0 : len(labels)-1])
-            labelVertical(
-                labels[i], 
-                text_box_width, 
-                text_y - i * 7,
-                screw_plate_depth
-            );
+        // Back face, adaptively sized to stay below the cleat and inside the
+        // part (the old fixed-size loop dropped lines on short plates).
+        labelBlockVertical(
+            labels, screw_plate_width / 2, screw_plate_depth,
+            screw_plate_width, 2, screw_plate_height - 16
+        );
     }
 }
 

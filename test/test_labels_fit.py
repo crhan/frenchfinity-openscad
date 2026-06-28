@@ -181,11 +181,38 @@ HK_CASES = [
 ]
 
 
+# --------------------------------------------------------------------------
+# Shared adaptive label block (labelBlockVertical) - guards the overflow fix
+# used by box / french_plate / screw_plate / wall_anchor / screw_driver.
+# --------------------------------------------------------------------------
+LB = "lb_"
+
+
+def lb_bounds(p):
+    # Block must stay within Z [lb_z0, lb_z1] and X [xpos - fw/2, xpos + fw/2].
+    z0 = p[LB + "z0"]
+    z1 = p[LB + "z1"]
+    fw = p[LB + "fw"]
+    xp = p[LB + "xpos"]
+    return [(2, z0, z1), (0, xp - fw / 2, xp + fw / 2)]
+
+
+LB_CASES = [
+    ("lb_normal",   dict(n=5, z0=2, z1=60, fw=40, xpos=0, yface=0), False),
+    ("lb_tight_h",  dict(n=8, z0=2, z1=20, fw=40, xpos=0, yface=0), False),  # short region
+    ("lb_narrow_w", dict(n=4, z0=2, z1=60, fw=14, xpos=0, yface=0), False),  # narrow face
+    ("lb_many",     dict(n=12, z0=2, z1=50, fw=30, xpos=0, yface=0), False),
+    ("lb_back",     dict(n=4, z0=2, z1=40, fw=30, xpos=0, yface=20), False), # back face (flipped)
+    ("lb_offset_x", dict(n=4, z0=2, z1=40, fw=30, xpos=15, yface=0), False),
+]
+
+
 SUITES = [
     ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
     ("pliers_holder",           os.path.join(HERE, "labels_only_pliers.scad"), PH,  ph_bounds,  PH_CASES),
     ("round_hanging_holder",    os.path.join(HERE, "labels_only_round.scad"),  RHH, rhh_bounds, RHH_CASES),
     ("hook",                    os.path.join(HERE, "labels_only_hook.scad"),   HK,  hk_bounds,  HK_CASES),
+    ("label_block",             os.path.join(HERE, "labels_only_block.scad"),  LB,  lb_bounds,  LB_CASES),
 ]
 
 AXIS_NAME = {0: "X", 1: "Y", 2: "Z"}
