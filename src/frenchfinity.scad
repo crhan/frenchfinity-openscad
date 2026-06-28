@@ -6,7 +6,7 @@ include <../lib/BOSL2/std.scad>
 //
 
 /* [Feature] */
-feature = "wall_anchor"; //[box, can_holder, french_plate, grid, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, wall_anchor]
+feature = "wall_anchor"; //[box, can_holder, french_plate, grid, hammer_holder, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, wall_anchor]
 
 /* [Wall anchor] */
 wall_anchor_height                = 60;
@@ -63,6 +63,18 @@ can_holder_can_inset    = 55;
 can_holder_padding_left = 16;
 // Bottom drain / push-out hole (1.0 "-hole-bottom" variant)
 can_holder_bottom       = "closed"; //[closed, open]
+
+/* [Hammer holder] */
+// Overall width / back plate width (w)
+hammer_holder_width                  = 100;
+// Front-to-back size of the head seat (hw)
+hammer_holder_hammer_width           = 36;
+// Central channel the handle hangs through (hhw)
+hammer_holder_handle_hole_width      = 38;
+// Front lip height that stops the head sliding off (dph)
+hammer_holder_drop_protection_height = 5;
+// Front lip thickness (dpw)
+hammer_holder_drop_protection_width  = 3;
 
 /* [Hook] */
 // Width of the hook bar (w)
@@ -163,6 +175,7 @@ include <box.scad>
 include <can_holder.scad>
 include <french_plate.scad>
 include <grid.scad>
+include <hammer_holder.scad>
 include <hook.scad>
 include <pliers_holder.scad>
 include <rectangular_tool_holder.scad>
@@ -190,6 +203,7 @@ module render_selected_feature () {
     if (feature == "can_holder")   feature_can_holder();
     if (feature == "french_plate") feature_french_plate();
     if (feature == "grid")         feature_grid();
+    if (feature == "hammer_holder") feature_hammer_holder();
     if (feature == "hook")         feature_hook();
     if (feature == "pliers_holder") feature_pliers_holder();
     if (feature == "rectangular_tool_holder") feature_rectangular_tool_holder();

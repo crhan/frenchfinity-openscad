@@ -85,7 +85,6 @@ python3 test/test_labels_fit.py
 
 | 模型 | User Parameters |
 |---|---|
-| Hammer Holder | width, hammer_width, handle_hole_width, drop_protection_height, drop_protection_width |
 | Wrench Holder | wrench_width, width, scale |
 | Gridfinity Adapter | grid_rows, grid_columns, angle |
 | Small Hole Holder | hole_width, tool_width, hole_length |
@@ -97,5 +96,6 @@ python3 test/test_labels_fit.py
 - round_hanging_holder（td, holder_depth, bhw, inset_depth；见 `reverse-engineering-round-hanging-holder.md`）
 - hook（width, height, hook_diameter, thickness, hook_end_height；见 `reverse-engineering-hook.md`）
 - can_holder（can_diameter, padding, can_inset, padding_left + bottom 枚举；功能保真：倾斜罐杯+背板cleat，dx=cd+2p 精确）
+- hammer_holder（width, hammer_width, handle_hole_width, drop_protection_height, drop_protection_width；功能保真：背板+双轨+手柄槽+防掉唇，dx=width/dz=50 精确）
 已存在于 2.0：wall_anchor / french_plate / screw_plate / screw_driver / box
 （grid 已接线但 `src/grid.scad` 缺失、不可用）。

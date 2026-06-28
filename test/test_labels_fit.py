@@ -236,9 +236,29 @@ CH_CASES = [
 ]
 
 
+# --------------------------------------------------------------------------
+# Hammer holder suite
+# --------------------------------------------------------------------------
+HM = "hammer_holder_"
+
+
+def hm_bounds(p):
+    # back face X-read: Z in [0, 50] (fixed height), X in [0, width]
+    return [(2, 0.0, 50.0), (0, 0.0, p[HM + "width"])]
+
+
+HM_CASES = [
+    ("hm_default", dict(width=100, hammer_width=36, handle_hole_width=38, drop_protection_height=5, drop_protection_width=3), False),
+    ("hm_narrow",  dict(width=44,  hammer_width=38, handle_hole_width=32, drop_protection_height=15, drop_protection_width=5), False),
+    ("hm_wide",    dict(width=120, hammer_width=52, handle_hole_width=44, drop_protection_height=15, drop_protection_width=5), False),
+    ("hm_text_off", dict(width=100, hammer_width=36, handle_hole_width=38, drop_protection_height=5, drop_protection_width=3, render_text=False), True),
+]
+
+
 SUITES = [
     ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
     ("can_holder",              os.path.join(HERE, "labels_only_can.scad"),    CH,  ch_bounds,  CH_CASES),
+    ("hammer_holder",           os.path.join(HERE, "labels_only_hammer.scad"), HM,  hm_bounds,  HM_CASES),
     ("pliers_holder",           os.path.join(HERE, "labels_only_pliers.scad"), PH,  ph_bounds,  PH_CASES),
     ("round_hanging_holder",    os.path.join(HERE, "labels_only_round.scad"),  RHH, rhh_bounds, RHH_CASES),
     ("hook",                    os.path.join(HERE, "labels_only_hook.scad"),   HK,  hk_bounds,  HK_CASES),
