@@ -314,6 +314,31 @@ EH_CASES = [
 ]
 
 
+# --------------------------------------------------------------------------
+# Gridfinity adapter suite
+# --------------------------------------------------------------------------
+GF = "gridfinity_adapter_"
+
+
+def gf_bounds(p):
+    import math
+    rows = p[GF + "grid_rows"]
+    a = p[GF + "angle"]
+    tilt = 2 * a
+    rise = 42 * rows * math.sin(math.radians(tilt))
+    bw = 42 * p[GF + "grid_columns"]
+    # back wall (X-read): Z in [0, rise+bed], X in [0, bw]
+    return [(2, 0.0, rise + 5), (0, 0.0, bw)]
+
+
+GF_CASES = [
+    ("gf_default", dict(grid_columns=3, grid_rows=3, angle=10), False),
+    ("gf_wide",    dict(grid_columns=5, grid_rows=3, angle=10), False),
+    ("gf_small",   dict(grid_columns=3, grid_rows=2, angle=10), False),
+    ("gf_text_off", dict(grid_columns=3, grid_rows=3, angle=10, render_text=False), True),
+]
+
+
 SUITES = [
     ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
     ("can_holder",              os.path.join(HERE, "labels_only_can.scad"),    CH,  ch_bounds,  CH_CASES),
@@ -321,6 +346,7 @@ SUITES = [
     ("wrench_holder",           os.path.join(HERE, "labels_only_wrench.scad"), WR,  wr_bounds,  WR_CASES),
     ("small_hole_holder",       os.path.join(HERE, "labels_only_smallhole.scad"), SH, sh_bounds, SH_CASES),
     ("einhell_battery_holder",  os.path.join(HERE, "labels_only_einhell.scad"), EH, eh_bounds, EH_CASES),
+    ("gridfinity_adapter",      os.path.join(HERE, "labels_only_gridfinity.scad"), GF, gf_bounds, GF_CASES),
     ("pliers_holder",           os.path.join(HERE, "labels_only_pliers.scad"), PH,  ph_bounds,  PH_CASES),
     ("round_hanging_holder",    os.path.join(HERE, "labels_only_round.scad"),  RHH, rhh_bounds, RHH_CASES),
     ("hook",                    os.path.join(HERE, "labels_only_hook.scad"),   HK,  hk_bounds,  HK_CASES),

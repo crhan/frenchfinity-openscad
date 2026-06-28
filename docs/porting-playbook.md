@@ -85,7 +85,6 @@ python3 test/test_labels_fit.py
 
 | 模型 | User Parameters |
 |---|---|
-| Gridfinity Adapter | grid_rows, grid_columns, angle |
 
 已完成：
 - rectangular_tool_holder（本手册的范例，见 `reverse-engineering-rectangular-tool-holder.md`）
@@ -97,5 +96,6 @@ python3 test/test_labels_fit.py
 - wrench_holder（width, wrench_width, scale；功能保真：双梳齿插槽架，dy=width+25.88 精确）
 - small_hole_holder（hole_width, hole_length, tool_width；功能保真,无 1.0 STL 仅按 f3d 参数推；带 cleat 的矩形孔板）
 - einhell_battery_holder（angle；功能保真,仅 1 个 1.0 STL；倾斜 U 槽电池座+背板cleat）
+- gridfinity_adapter（grid_columns, grid_rows, angle；功能保真：斜置 gridfinity 底板(42mm,带倒角卡槽)+楔形+cleat，dx=42*gc 精确）
 已存在于 2.0（已审查对比 1.0，见 `audit-existing-components.md`）：
 wall_anchor / french_plate / screw_plate / screw_driver / box / grid（已补全）。
