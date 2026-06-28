@@ -305,8 +305,8 @@ EH = "einhell_battery_holder_"
 
 
 def eh_bounds(p):
-    # back body face (X-read): Z in [0, base+channel], X in [0, 55]
-    return [(2, 0.0, 8 + 26), (0, 0.0, 55)]
+    # base block front face (X-read): Z in [0, base_h], X in [0, width]
+    return [(2, 0.0, 30), (0, 0.0, 55)]
 
 
 EH_CASES = [
