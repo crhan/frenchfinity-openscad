@@ -255,10 +255,33 @@ HM_CASES = [
 ]
 
 
+# --------------------------------------------------------------------------
+# Wrench holder suite
+# --------------------------------------------------------------------------
+WR = "wrench_holder_"
+
+
+def wr_bounds(p):
+    # rail side faces (Y-read): Z in [0, h], Y in [0, L]
+    s = p[WR + "scale"]
+    h = max(14.20, 11.2 * s + 7.4)
+    L = p[WR + "width"] + 15
+    return [(2, 0.0, h), (1, 0.0, L)]
+
+
+WR_CASES = [
+    ("wr_default", dict(width=40, wrench_width=8, scale=1), False),
+    ("wr_small",   dict(width=27, wrench_width=3.4, scale=0.4), False),
+    ("wr_big",     dict(width=56, wrench_width=8, scale=1.35), False),
+    ("wr_text_off", dict(width=40, wrench_width=8, scale=1, render_text=False), True),
+]
+
+
 SUITES = [
     ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
     ("can_holder",              os.path.join(HERE, "labels_only_can.scad"),    CH,  ch_bounds,  CH_CASES),
     ("hammer_holder",           os.path.join(HERE, "labels_only_hammer.scad"), HM,  hm_bounds,  HM_CASES),
+    ("wrench_holder",           os.path.join(HERE, "labels_only_wrench.scad"), WR,  wr_bounds,  WR_CASES),
     ("pliers_holder",           os.path.join(HERE, "labels_only_pliers.scad"), PH,  ph_bounds,  PH_CASES),
     ("round_hanging_holder",    os.path.join(HERE, "labels_only_round.scad"),  RHH, rhh_bounds, RHH_CASES),
     ("hook",                    os.path.join(HERE, "labels_only_hook.scad"),   HK,  hk_bounds,  HK_CASES),

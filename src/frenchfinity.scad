@@ -6,7 +6,7 @@ include <../lib/BOSL2/std.scad>
 //
 
 /* [Feature] */
-feature = "wall_anchor"; //[box, can_holder, french_plate, grid, hammer_holder, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, wall_anchor]
+feature = "wall_anchor"; //[box, can_holder, french_plate, grid, hammer_holder, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, wall_anchor, wrench_holder]
 
 /* [Wall anchor] */
 wall_anchor_height                = 60;
@@ -104,6 +104,14 @@ round_hanging_holder_bottom_hole_width = 20;
 // How deep the tool seats into the back wall (id)
 round_hanging_holder_inset_depth       = 3;
 
+/* [Wrench holder] */
+// Length of the rack out from the wall; more length = more slots (w)
+wrench_holder_width        = 40;
+// Width of a wrench slot, the gap between comb teeth (ww)
+wrench_holder_wrench_width = 8;
+// Scales the rack cross-section (width & height) (s)
+wrench_holder_scale        = 1;
+
 /* [Box] */
 box_width          = 50;
 box_depth          = 30;
@@ -183,6 +191,7 @@ include <round_hanging_holder.scad>
 include <screw_driver.scad>
 include <screw_plate.scad>
 include <wall_anchor.scad>
+include <wrench_holder.scad>
 
 
 
@@ -211,6 +220,7 @@ module render_selected_feature () {
     if (feature == "screw_plate")  feature_screw_plate();
     if (feature == "screw_driver") feature_screw_driver();
     if (feature == "wall_anchor")  feature_wall_anchor();
+    if (feature == "wrench_holder") feature_wrench_holder();
 }
 
 render_selected_feature();
