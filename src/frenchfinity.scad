@@ -6,7 +6,7 @@ include <../lib/BOSL2/std.scad>
 //
 
 /* [Feature] */
-feature = "wall_anchor"; //[box, french_plate, grid, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, wall_anchor]
+feature = "wall_anchor"; //[box, can_holder, french_plate, grid, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, wall_anchor]
 
 /* [Wall anchor] */
 wall_anchor_height                = 60;
@@ -51,6 +51,18 @@ rectangular_tool_holder_tool_slot_height = 10;
 // Width of the front opening and the bottom push-out slot (hhw)
 rectangular_tool_holder_hole_width  = 8;
 rectangular_tool_holder_hole_position = "center"; //[left, center, right]
+
+/* [Can holder] */
+// Diameter of the can / tube the holder cradles (cd)
+can_holder_can_diameter = 10;
+// Wall around the bore; width = cd + 2*padding (p)
+can_holder_padding      = 10;
+// How deep the can sits, along the tilted axis (ci)
+can_holder_can_inset    = 55;
+// Extra back / base material (pl)
+can_holder_padding_left = 16;
+// Bottom drain / push-out hole (1.0 "-hole-bottom" variant)
+can_holder_bottom       = "closed"; //[closed, open]
 
 /* [Hook] */
 // Width of the hook bar (w)
@@ -148,6 +160,7 @@ include <screws.scad>
 //
 
 include <box.scad>
+include <can_holder.scad>
 include <french_plate.scad>
 include <grid.scad>
 include <hook.scad>
@@ -174,6 +187,7 @@ include <wall_anchor.scad>
 
 module render_selected_feature () {
     if (feature == "box")          feature_box();
+    if (feature == "can_holder")   feature_can_holder();
     if (feature == "french_plate") feature_french_plate();
     if (feature == "grid")         feature_grid();
     if (feature == "hook")         feature_hook();

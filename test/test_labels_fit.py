@@ -211,8 +211,34 @@ LB_CASES = [
 ]
 
 
+# --------------------------------------------------------------------------
+# Can holder suite
+# --------------------------------------------------------------------------
+CH = "can_holder_"
+
+
+def ch_bounds(p):
+    cd = p[CH + "can_diameter"]
+    pp = p[CH + "padding"]
+    ci = p[CH + "can_inset"]
+    pl = p[CH + "padding_left"]
+    w = cd + 2 * pp
+    h = 0.867 * ci + 0.323 * cd + 0.268 * pl + 1.55 * pp + 1.69
+    # back face X-read: check Z in [0, h] and X in [0, w]
+    return [(2, 0.0, h), (0, 0.0, w)]
+
+
+CH_CASES = [
+    ("ch_default", dict(can_diameter=10, padding=10, can_inset=55, padding_left=16), False),
+    ("ch_big",     dict(can_diameter=12, padding=10, can_inset=70, padding_left=10), False),
+    ("ch_small",   dict(can_diameter=6,  padding=8,  can_inset=55, padding_left=18), False),
+    ("ch_text_off", dict(can_diameter=10, padding=10, can_inset=55, padding_left=16, render_text=False), True),
+]
+
+
 SUITES = [
     ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
+    ("can_holder",              os.path.join(HERE, "labels_only_can.scad"),    CH,  ch_bounds,  CH_CASES),
     ("pliers_holder",           os.path.join(HERE, "labels_only_pliers.scad"), PH,  ph_bounds,  PH_CASES),
     ("round_hanging_holder",    os.path.join(HERE, "labels_only_round.scad"),  RHH, rhh_bounds, RHH_CASES),
     ("hook",                    os.path.join(HERE, "labels_only_hook.scad"),   HK,  hk_bounds,  HK_CASES),
