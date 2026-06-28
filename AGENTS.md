@@ -4,9 +4,20 @@
 
 - **移植下一个 1.0 模型**：照 `docs/porting-playbook.md` 走（含待移植清单与命令）。
 - **逆向工具**：`tools/f3d_inspect.py`（从 .f3d 抽参数/预览）、
-  `tools/stl_analyze.py`（bbox 回归 / 截面 / 平面特征）。
+  `tools/stl_analyze.py`（bbox 回归 / 截面 / 平面特征，**只读二进制 STL**）。
 - 第一个完整范例：`docs/reverse-engineering-rectangular-tool-holder.md`。
 - 1.0 源文件在 `/Volumes/home/Drive/3D模型/FrenchFinity/`。
+  **目录名可能是简洁版**（`Bit-Holder`、`Tape-Holder`、`Can-Holder`…）而非旧的
+  `Bit_Drill+Holder+French+Cleat+Frenchfinity` 长名——用
+  `find "$B" -ipath "*关键词*" -iname "*.stl"` 兜底，别硬编码目录名。
+
+**铁律：bbox 对 ≠ 形状对。** 别只用 `stl_analyze bbox` 回归来"对齐"——那样会造出
+bbox 一致、形状完全错的废件（can 曾是横躺圆柱、tape 没转轴、bit 行往外悬挑……全是
+这么来的，2026-06-29 整批重建）。**必须按图形验证**：把我方 STL 和 1.0 STL 在相同
+相机下各渲 iso/side/front/top（openscad `import()` 读 ASCII+二进制；Fusion 导出的
+ASCII STL 要先 `openscad -o x.stl --export-format binstl` 转二进制才能喂
+`stl_analyze`），**亲眼看几何 + 切截面**定结构，再让 bbox 自然涌现。也别信子 agent 的
+"functional_equivalent" 判定（曾把没转轴的 tape 判成功能等价）。
 - 远端：`fork` = `crhan/frenchfinity-openscad`（推这里），`origin` = 上游 Bastelsaal。
   当前工作分支 `rectangular-tool-holder`。
 
