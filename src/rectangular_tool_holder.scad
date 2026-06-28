@@ -104,10 +104,33 @@ module rectangular_tool_holder_with_nut () {
     }
 }
 
+// Engrave one block of label lines on a side wall, reading along the length.
+// The 1.0 Fusion model put its text on the two long side walls (not the back),
+// which are the faces you actually see once the holder is on the wall, so we do
+// the same. side = "right" (+X wall) or "left" (-X wall).
+module rectangular_tool_holder_label_block (lines, side) {
+    w       = rectangular_tool_holder_outer_width();
+    l       = rectangular_tool_holder_outer_length();
+    h       = rectangular_tool_holder_outer_height();
+    engrave = 1.5;                          // recess depth (1.0 uses ~2 mm)
+    pitch   = text_size + 1.5;
+    n       = len(lines);
+    z_top   = (h + (n - 1) * pitch) / 2;    // vertically centred block
+
+    if (render_text)
+        for (i = [0 : n - 1])
+            translate([side == "right" ? w : 0, l / 2, z_top - i * pitch])
+                rotate(side == "right" ? [90, 0, 90] : [90, 0, -90])
+                    text3d(
+                        lines[i],
+                        size   = text_size,
+                        height = engrave * 2,   // centred -> engraves `engrave` deep
+                        anchor = CENTER
+                    );
+}
+
 module rectangular_tool_holder_with_nut_and_text () {
-    w      = rectangular_tool_holder_outer_width();
-    l      = rectangular_tool_holder_outer_length();
-    h      = rectangular_tool_holder_outer_height();
+    // Keep the 2.0 filename proposal echo (ECHO: "filename proposal:", ...).
     labels = hintFileName([
         final_version_prefix_calculated,
         [
@@ -121,24 +144,26 @@ module rectangular_tool_holder_with_nut_and_text () {
         str("hole", rectangular_tool_holder_hole_position)
     ]);
 
-    // Lay the labels out so the whole block always fits inside the part height
-    // (real holders are only ~20-25 mm tall, so the box.scad fixed step would
-    // push the last - and most important - line off the bottom). The pitch
-    // shrinks for short parts and the block is centred vertically.
-    count = len(labels);
-    pitch = count > 1 ? min(7, (h - text_size) / (count - 1)) : 0;
-    top   = (h + (count - 1) * pitch) / 2;
-
+    // Mirror the 1.0 text layout: version + tool_width on the right wall, the
+    // slot dimensions on the left wall.
     difference () {
         rectangular_tool_holder_with_nut();
 
-        for (i = [0 : count - 1])
-            labelVertical(
-                labels[i],
-                w / 2,
-                top - i * pitch,
-                l
-            );
+        rectangular_tool_holder_label_block(
+            [
+                final_version_prefix_calculated,
+                str("tw", rectangular_tool_holder_tool_width)
+            ],
+            "right"
+        );
+        rectangular_tool_holder_label_block(
+            [
+                str("tl",  rectangular_tool_holder_tool_length),
+                str("tsh", rectangular_tool_holder_tool_slot_height),
+                str("hhw", rectangular_tool_holder_hole_width)
+            ],
+            "left"
+        );
     }
 }
 
