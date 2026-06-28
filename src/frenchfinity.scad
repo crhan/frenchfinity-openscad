@@ -6,7 +6,7 @@ include <../lib/BOSL2/std.scad>
 //
 
 /* [Feature] */
-feature = "wall_anchor"; //[box, french_plate, grid, rectangular_tool_holder, screw_plate, screw_driver, wall_anchor]
+feature = "wall_anchor"; //[box, french_plate, grid, pliers_holder, rectangular_tool_holder, screw_plate, screw_driver, wall_anchor]
 
 /* [Wall anchor] */
 wall_anchor_height                = 60;
@@ -51,6 +51,12 @@ rectangular_tool_holder_tool_slot_height = 10;
 // Width of the front opening and the bottom push-out slot (hhw)
 rectangular_tool_holder_hole_width  = 8;
 rectangular_tool_holder_hole_position = "center"; //[left, center, right]
+
+/* [Pliers holder] */
+// Overall height of the holder (h); the body grows downward as this grows
+pliers_holder_height        = 80;
+// Width of the central slot cavity that grips the pliers (hd)
+pliers_holder_hole_diameter = 18;
 
 /* [Box] */
 box_width          = 50;
@@ -115,6 +121,7 @@ include <screws.scad>
 include <box.scad>
 include <french_plate.scad>
 include <grid.scad>
+include <pliers_holder.scad>
 include <rectangular_tool_holder.scad>
 include <screw_driver.scad>
 include <screw_plate.scad>
@@ -138,6 +145,7 @@ module render_selected_feature () {
     if (feature == "box")          feature_box();
     if (feature == "french_plate") feature_french_plate();
     if (feature == "grid")         feature_grid();
+    if (feature == "pliers_holder") feature_pliers_holder();
     if (feature == "rectangular_tool_holder") feature_rectangular_tool_holder();
     if (feature == "screw_plate")  feature_screw_plate();
     if (feature == "screw_driver") feature_screw_driver();

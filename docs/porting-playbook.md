@@ -88,13 +88,14 @@ python3 test/test_labels_fit.py
 | Hook | width, height, hook_diameter, thickness, hook_end_height |
 | Round Hanging Holder | tool_diameter, holder_depth, bottom_hole_width, inset_depth |
 | Can Holder | can_diameter, padding_left, can_inset, padding |
-| Pliers Holder | height, hole_diameter |
 | Hammer Holder | width, hammer_width, handle_hole_width, drop_protection_height, drop_protection_width |
 | Wrench Holder | wrench_width, width, scale |
 | Gridfinity Adapter | grid_rows, grid_columns, angle |
 | Small Hole Holder | hole_width, tool_width, hole_length |
 | Einhell Battery Holder | angle |
 
-已完成：rectangular_tool_holder（本手册的范例）。
+已完成：
+- rectangular_tool_holder（本手册的范例，见 `reverse-engineering-rectangular-tool-holder.md`）
+- pliers_holder（height, hole_diameter；见 `reverse-engineering-pliers-holder.md`）
 已存在于 2.0：wall_anchor / french_plate / screw_plate / screw_driver / box
 （grid 已接线但 `src/grid.scad` 缺失、不可用）。

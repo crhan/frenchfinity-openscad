@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Regression test: the engraved labels of the rectangular tool holder must
-always stay inside the part.
+"""Regression test: the engraved labels of every tool holder must stay inside
+the part.
 
-A 1.5 mm engraving cannot grow the part's bounding box, so a label that does not
-fit is silently clipped / dropped (this actually happened: the bottom line ran
-off short parts). We therefore render the labels *as positive solids*
-(test/labels_only.scad) and check their bounding box fits within the part:
+A ~1.5 mm engraving cannot grow the part's bounding box, so a label that does
+not fit is silently clipped / dropped (this actually happened: a bottom line ran
+off short parts). We therefore render the labels *as positive solids* (the
+test/labels_only*.scad harnesses) and check their bounding box fits within the
+region of the part that is guaranteed to be solid.
 
-    part height h = tool_slot_height + 15   (base_below)
-    part length l = tool_length      + 10   (2 * end_wall)
-
-The labels are intentionally allowed to poke through the side walls in X (that is
-how the engraving cuts in), so only Z (height) and Y (length) are checked.
+Each model registers a suite: its harness scad, the cases (parameter sets), and
+a function that returns the allowed (zmin, zmax, ymin, ymax) box for a case. The
+labels are intentionally allowed to poke through the side walls in X (that is how
+the engraving cuts in), so only Z and Y are checked.
 
 Run:  python3 test/test_labels_fit.py
 Exit code 0 = all pass, 1 = a failure.
@@ -25,12 +25,7 @@ import sys
 import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SCAD = os.path.join(HERE, "labels_only.scad")
-
-# Must match the constants in src/rectangular_tool_holder.scad.
-BASE_BELOW = 15   # part height  = tool_slot_height + base_below
-END_WALL_2 = 10   # part length  = tool_length      + 2 * end_wall
-EPS = 0.1         # float / fillet tolerance (mm)
+EPS = 0.1  # float / fillet tolerance (mm)
 
 
 def find_openscad():
@@ -49,7 +44,7 @@ def find_openscad():
 OSC = find_openscad()
 
 
-def render(params, out):
+def render(scad, params, out):
     cmd = [OSC, "-o", out, "--export-format", "binstl"]
     for k, v in params.items():
         if isinstance(v, bool):
@@ -59,13 +54,12 @@ def render(params, out):
         else:
             val = v
         cmd += ["-D", f"{k}={val}"]
-    cmd.append(SCAD)
-    r = subprocess.run(cmd, capture_output=True, text=True)
-    return r
+    cmd.append(scad)
+    return subprocess.run(cmd, capture_output=True, text=True)
 
 
 def bbox(stl):
-    """Return (n_triangles, (xmin,ymin,zmin), (xmax,ymax,zmax)) or (0,...)."""
+    """Return (n_triangles, (xmin,ymin,zmin), (xmax,ymax,zmax)) or (0,None,None)."""
     with open(stl, "rb") as f:
         f.read(80)
         n = struct.unpack("<I", f.read(4))[0]
@@ -80,86 +74,130 @@ def bbox(stl):
             off = base + vi * 12
             x, y, z = struct.unpack_from("<fff", data, off)
             for a, c in enumerate((x, y, z)):
-                if c < lo[a]:
-                    lo[a] = c
-                if c > hi[a]:
-                    hi[a] = c
+                lo[a] = min(lo[a], c)
+                hi[a] = max(hi[a], c)
     return n, tuple(lo), tuple(hi)
 
 
-# (name, params, expect_empty)
-CASES = [
-    ("default",        dict(rectangular_tool_holder_tool_width=20, rectangular_tool_holder_tool_length=60,  rectangular_tool_holder_tool_slot_height=10, rectangular_tool_holder_hole_width=8), False),
-    ("tiny_height_1",  dict(rectangular_tool_holder_tool_width=20, rectangular_tool_holder_tool_length=60,  rectangular_tool_holder_tool_slot_height=1,  rectangular_tool_holder_hole_width=8), False),
-    ("tiny_height_3",  dict(rectangular_tool_holder_tool_width=20, rectangular_tool_holder_tool_length=60,  rectangular_tool_holder_tool_slot_height=3,  rectangular_tool_holder_hole_width=8), False),
-    ("short_length",   dict(rectangular_tool_holder_tool_width=20, rectangular_tool_holder_tool_length=18,  rectangular_tool_holder_tool_slot_height=10, rectangular_tool_holder_hole_width=8), False),
-    ("tiny_both",      dict(rectangular_tool_holder_tool_width=16, rectangular_tool_holder_tool_length=15,  rectangular_tool_holder_tool_slot_height=2,  rectangular_tool_holder_hole_width=4), False),
-    ("big_text",       dict(rectangular_tool_holder_tool_width=20, rectangular_tool_holder_tool_length=60,  rectangular_tool_holder_tool_slot_height=10, rectangular_tool_holder_hole_width=8, text_size=12), False),
-    ("big_part",       dict(rectangular_tool_holder_tool_width=52, rectangular_tool_holder_tool_length=128, rectangular_tool_holder_tool_slot_height=30, rectangular_tool_holder_hole_width=36), False),
-    ("hole_left",      dict(rectangular_tool_holder_tool_width=12.5, rectangular_tool_holder_tool_length=46, rectangular_tool_holder_tool_slot_height=5, rectangular_tool_holder_hole_width=8, rectangular_tool_holder_hole_position="left"), False),
-    ("hole_right",     dict(rectangular_tool_holder_tool_width=12.5, rectangular_tool_holder_tool_length=46, rectangular_tool_holder_tool_slot_height=5, rectangular_tool_holder_hole_width=8, rectangular_tool_holder_hole_position="right"), False),
-    ("render_text_off", dict(rectangular_tool_holder_tool_width=20, rectangular_tool_holder_tool_length=60, rectangular_tool_holder_tool_slot_height=10, rectangular_tool_holder_hole_width=8, render_text=False), True),
+# --------------------------------------------------------------------------
+# Rectangular tool holder suite
+# --------------------------------------------------------------------------
+RTH = "rectangular_tool_holder_"
+
+
+def rth_bounds(p):
+    # Must match src/rectangular_tool_holder.scad: h = tsh + 15, l = tl + 10.
+    h = p[RTH + "tool_slot_height"] + 15
+    l = p[RTH + "tool_length"] + 10
+    return 0.0, h, 0.0, l
+
+
+RTH_CASES = [
+    ("rth_default",    dict(tool_width=20, tool_length=60,  tool_slot_height=10, hole_width=8), False),
+    ("rth_tiny_h1",    dict(tool_width=20, tool_length=60,  tool_slot_height=1,  hole_width=8), False),
+    ("rth_tiny_h3",    dict(tool_width=20, tool_length=60,  tool_slot_height=3,  hole_width=8), False),
+    ("rth_short_len",  dict(tool_width=20, tool_length=18,  tool_slot_height=10, hole_width=8), False),
+    ("rth_tiny_both",  dict(tool_width=16, tool_length=15,  tool_slot_height=2,  hole_width=4), False),
+    ("rth_big_text",   dict(tool_width=20, tool_length=60,  tool_slot_height=10, hole_width=8, text_size=12), False),
+    ("rth_big_part",   dict(tool_width=52, tool_length=128, tool_slot_height=30, hole_width=36), False),
+    ("rth_hole_left",  dict(tool_width=12.5, tool_length=46, tool_slot_height=5, hole_width=8, hole_position="left"), False),
+    ("rth_hole_right", dict(tool_width=12.5, tool_length=46, tool_slot_height=5, hole_width=8, hole_position="right"), False),
+    ("rth_text_off",   dict(tool_width=20, tool_length=60, tool_slot_height=10, hole_width=8, render_text=False), True),
+]
+
+
+# --------------------------------------------------------------------------
+# Pliers holder suite
+# --------------------------------------------------------------------------
+PH = "pliers_holder_"
+
+
+def ph_bounds(p):
+    # Labels live inside the always-solid seat rectangle (see pliers_holder.scad):
+    # Z in [0, seat_top], Y in [body_depth - seat_depth, body_depth].
+    toe, seat_frac, base_extra = 10, 0.55, 6
+    body_depth, seat_depth = 80, 54
+    h = p[PH + "height"] + base_extra
+    seat_top = toe + (h - toe) * seat_frac
+    return 0.0, seat_top, body_depth - seat_depth, body_depth
+
+
+PH_CASES = [
+    ("ph_default",   dict(height=80,  hole_diameter=18), False),
+    ("ph_tiny",      dict(height=40,  hole_diameter=12), False),
+    ("ph_short",     dict(height=60,  hole_diameter=14), False),
+    ("ph_tall",      dict(height=150, hole_diameter=23), False),
+    ("ph_big_text",  dict(height=80,  hole_diameter=18, text_size=12), False),
+    ("ph_text_off",  dict(height=80,  hole_diameter=18, render_text=False), True),
+]
+
+
+SUITES = [
+    ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
+    ("pliers_holder",           os.path.join(HERE, "labels_only_pliers.scad"), PH,  ph_bounds,  PH_CASES),
 ]
 
 
 def main():
-    tmp = tempfile.mkdtemp(prefix="rth_labels_test_")
-    failures = 0
-    for name, params, expect_empty in CASES:
-        out = os.path.join(tmp, name + ".stl")
-        r = render(params, out)
+    tmp = tempfile.mkdtemp(prefix="labels_test_")
+    failures = total = 0
 
-        if expect_empty:
-            # No text -> OpenSCAD has nothing to export ("top level object is
-            # empty"); that is the correct outcome, not a failure.
-            n = 0
-            if os.path.exists(out) and os.path.getsize(out) > 84:
-                n, _, _ = bbox(out)
-            if n == 0:
-                print(f"[PASS] {name}: no text rendered (render_text=false)")
-            else:
-                print(f"[FAIL] {name}: expected no text but got {n} triangles")
+    for model, scad, prefix, bounds, cases in SUITES:
+        print(f"=== {model} ===")
+        for name, raw, expect_empty in cases:
+            total += 1
+            # prefix model-specific keys; pass shared keys (text_size, render_text) through
+            shared = ("text_size", "render_text")
+            params = {(k if k in shared else prefix + k): v for k, v in raw.items()}
+            out = os.path.join(tmp, name + ".stl")
+            r = render(scad, params, out)
+
+            if expect_empty:
+                n = 0
+                if os.path.exists(out) and os.path.getsize(out) > 84:
+                    n, _, _ = bbox(out)
+                if n == 0:
+                    print(f"[PASS] {name}: no text rendered (render_text=false)")
+                else:
+                    print(f"[FAIL] {name}: expected no text but got {n} triangles")
+                    failures += 1
+                continue
+
+            if r.returncode != 0 or not os.path.exists(out):
+                print(f"[FAIL] {name}: openscad render failed\n{r.stderr.strip()[:300]}")
                 failures += 1
-            continue
+                continue
+            n, lo, hi = bbox(out)
+            if n == 0 or lo is None or hi is None:
+                print(f"[FAIL] {name}: labels are empty (nothing engraved)")
+                failures += 1
+                continue
 
-        if r.returncode != 0 or not os.path.exists(out):
-            print(f"[FAIL] {name}: openscad render failed\n{r.stderr.strip()[:300]}")
-            failures += 1
-            continue
-        n, lo, hi = bbox(out)
+            zmin, zmax, ymin, ymax = bounds(params)
+            errs = []
+            if lo[2] < zmin - EPS:
+                errs.append(f"text below region (zmin={lo[2]:.2f} < {zmin})")
+            if hi[2] > zmax + EPS:
+                errs.append(f"text above region (zmax={hi[2]:.2f} > {zmax:.2f})")
+            if lo[1] < ymin - EPS:
+                errs.append(f"text past front (ymin={lo[1]:.2f} < {ymin})")
+            if hi[1] > ymax + EPS:
+                errs.append(f"text past back (ymax={hi[1]:.2f} > {ymax})")
 
-        if n == 0 or lo is None or hi is None:
-            print(f"[FAIL] {name}: labels are empty (nothing engraved)")
-            failures += 1
-            continue
-
-        tsh = params["rectangular_tool_holder_tool_slot_height"]
-        tl = params["rectangular_tool_holder_tool_length"]
-        h = tsh + BASE_BELOW
-        l = tl + END_WALL_2
-
-        errs = []
-        if lo[2] < -EPS:
-            errs.append(f"text below part bottom (zmin={lo[2]:.2f} < 0)")
-        if hi[2] > h + EPS:
-            errs.append(f"text above part top (zmax={hi[2]:.2f} > h={h})")
-        if lo[1] < -EPS:
-            errs.append(f"text past front (ymin={lo[1]:.2f} < 0)")
-        if hi[1] > l + EPS:
-            errs.append(f"text past back (ymax={hi[1]:.2f} > l={l})")
-
-        if errs:
-            print(f"[FAIL] {name}: " + "; ".join(errs)
-                  + f"  [Z {lo[2]:.2f}..{hi[2]:.2f} in 0..{h}, Y {lo[1]:.2f}..{hi[1]:.2f} in 0..{l}]")
-            failures += 1
-        else:
-            print(f"[PASS] {name}: text fits  Z {lo[2]:.2f}..{hi[2]:.2f}/0..{h}  Y {lo[1]:.2f}..{hi[1]:.2f}/0..{l}")
+            if errs:
+                print(f"[FAIL] {name}: " + "; ".join(errs)
+                      + f"  [Z {lo[2]:.2f}..{hi[2]:.2f} in {zmin:.1f}..{zmax:.1f},"
+                      + f" Y {lo[1]:.2f}..{hi[1]:.2f} in {ymin:.1f}..{ymax:.1f}]")
+                failures += 1
+            else:
+                print(f"[PASS] {name}: text fits  Z {lo[2]:.2f}..{hi[2]:.2f}/{zmin:.1f}..{zmax:.1f}"
+                      f"  Y {lo[1]:.2f}..{hi[1]:.2f}/{ymin:.1f}..{ymax:.1f}")
 
     print()
     if failures:
-        print(f"FAILED: {failures}/{len(CASES)} cases")
+        print(f"FAILED: {failures}/{total} cases")
         return 1
-    print(f"OK: all {len(CASES)} cases passed")
+    print(f"OK: all {total} cases passed")
     return 0
 
 
