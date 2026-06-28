@@ -1,7 +1,10 @@
 # 逆向 Can-Holder（Can-Holder v42.f3d → src/can_holder.scad）
 
 罐架 / 钻头架 / 喷罐架。方法见 `porting-playbook.md`；这里只记结论与坑。
-**功能保真 + 关键尺寸移植，非顶点克隆**：dx 精确，dy/dz 为多元拟合。
+
+> 2026-06-29（commit f61dd49）**按真实横截面几何重建**：旧版是「拟合 bbox」得来的，
+> 形状完全错（曾把一根 30° 斜圆柱「杯」intersection 进盒子里）。现版以 6 个参考 STL
+> 的侧向横截面逐一隔离参数测出，**不再用 bbox 驱动几何**。本文已对齐重建后的代码。
 
 ## 参数（f3d_inspect）
 
@@ -9,55 +12,68 @@
 frenchfinity-can-holder-v{version}-cd{can_diameter}-pl{padding_left}-ci{can_inset}-p{padding}
                                                                               （+「-hole-bottom」变体）
 ```
-→ `can_diameter(cd)` 内孔径、`padding(p)` 孔壁厚、`can_inset(ci)` 罐插入深、
-`padding_left(pl)` 背/底料厚、`version(v)`。
+
+各参数**实际驱动什么**（这是旧版搞错的根源，必须看准）：
+
+- `can_diameter(cd)` —— 要插入的罐/管直径；孔径 = `cd + clearance`（clearance=2.4）。
+- `padding(p)` —— **前墙/侧墙**料厚，定宽度 `dx = cd + 2p`。
+- `can_inset(ci)` —— **孔深**，沿（倾斜的）孔轴方向量。
+- `padding_left(pl)` —— **背墙**厚（朝墙/cleat 一侧）；并影响实心底高 `base = 9 + 0.3·pl`。
+- `version(v)`。
+
 `-hole-bottom` 变体 = 杯底排水/顶出孔，移植里折叠成 `can_holder_bottom`(`closed`/`open`)。
 
-## 尺寸（stl_analyze，53 个样本）
+## 几何（真实形状）
 
-regress 工具只做「单变量、R²>0.9」拟合，所以输出有限：
+一块**竖直的实心块**，宽 `cd+2p`，从**顶面钻一个深盲孔**，孔轴绕 X 倾 `tilt=9°`，
+让罐子向外（顶部离墙）倾出、好抓：
 
-```
-dx = 1.011*cd + 18.635   (R²=0.9943)    # 截距 18.6 其实是 2p（样本 p 多为 10）
-dy = 1.147*cd + 48.282   (R²=0.9136)    # 弱拟合，dy 实为多元
-dz                                      # 无单变量拟合达 R²>0.9 → 未输出（dz 由 ci 主导但多元）
-```
-
-单变量工具吃不下「2p」「多元」这些项。bbox 实测交叉验证后，真实关系（.scad 头注用的）是：
-
-```
-dx = cd + 2p                                              # 精确，R²=1.0
-dz ≈ 0.867*ci + 0.323*cd + 0.268*pl + 1.55*p + 1.69      # 多元，±~1.5mm；0.867=cos30°→孔倾 30°
-dy ≈ 0.94*cd + 0.755*pl + 1.432*p + 0.07*ci + 17.48      # 多元，R²≈0.997，±~1mm（含 cleat）
-```
-
-`dx` 实测精确：cd6/p10→26.00、cd20/p10→40.00、cd7/p8→23.00，逐 mm 命中。
-`0.867≈cos30°` 直接说明孔轴绕 X 倾 ~30°，罐子向外上方倾出（离墙）。
-
-## 几何
-
-竖直背板（承 cleat + 文字）+ 前方融合一个**开口朝上的圆柱杯**：
-- 杯外径 = `cd+2p`、内孔 = `cd`、壁厚 = `p`；整杯绕 X `rotate([30,0,0])` 倾斜。
-- 杯用 `intersection` 裁进包络立方体 `[w,d,h]` → 平底/平顶/平背。
-- `can_holder_bottom=="open"` 时杯底挖一个直径 6 的竖直排水孔（= 1.0 `-hole-bottom`）。
+- **背墙竖直**，厚 `pl`，位于 `Y=D`，顶部承 french cleat。
+- **前面斜切**，与孔轴平行（顶部向 `-Y` 探出、底部缩回），使前/侧墙保持恒定 ~`p`。
+  前面在高度 `z` 处的 Y：`front_y(z) = -ci·sin(tilt)·z/H`。
+- **实心底** `base = 9 + 0.3·pl` 位于孔底之下。
+- 盲孔从顶钻入：`bd = cd + 2.4`，`rotate([9,0,0])`，孔上方留 `rim=4` 实心唇（高侧）。
+- `can_holder_bottom=="open"` 时，底部增加一个直径 6 的竖直排水/顶出孔（= 1.0 `-hole-bottom`）。
 - 朝向：cleat 在 +Y（背面），与其它 holder 一致。
+
+实现：块身是 `rotate([90,0,90]) linear_extrude(w)` 把 YZ 多边形
+`[[D,0],[0,0],[yft,H],[D,H]]`（背-底、前-底、前-顶探出 `yft=-ci·sin(tilt)`、背-顶）
+沿 X 拉满宽度；再 `difference` 减去倾斜盲孔（及可选排水孔）。**没有任何 intersection。**
+
+## 尺寸
+
+```
+dx = cd + 2·p                                  # 精确，R²=1.0
+H  = base + ci·cos(tilt) + rim                 # base=9+0.3·pl, tilt=9°, rim=4
+D  = (cd+2.4) + p + pl                         # 背墙 Y（前墙 p + 孔 + 背墙 pl）
+dy ≈ (cd+2.4) + p + pl + ci·sin(tilt) + cleat  # 含前面探出与 cleat 凸起
+```
+
+`0.3·pl` 的底高项与 `cos9°` 的孔倾，是横截面逐例测出的经验关系；**功能近似**，
+在小 ci / 大 pl 的极端例会有几 mm 偏差（见验证）。
 
 ## 实现要点
 
-- 固定常量：`plate_depth=8`、`base=6`、`drain=6`、`tilt=30`（头注 + .scad）。
-- 杯心 `cup_y = d - plate - (cd/2+p)*0.4` 是经验定位，让倾斜杯底坐在前下方。
-- cleat 复用 `nut(w,false)`，`up(h - slot_distance_top*2) back(d)`；公差自动（只缩公舌）。
-- 文字 `v/cd/pl/ci/p` 5 行刻在**宽背面（X-read）**，装不下溢出到背板前面；
-  `hintFileName` 另出 2 行紧凑布局并附 `hole` 状态。
+- 固定常量（头注 + .scad）：`tilt=9`、`clearance=2.4`、`rim=4`、`drain=6`。
+- cleat 复用 `nut(w,false)`，`up(H - slot_distance_top*2) back(D)`；公差自动（只缩公舌）。
+- 文字 `v/cd/pl/ci/p` 5 行刻在**斜切前面**上，每行按其高度的 `front_y(z)` 定位，
+  即使斜面也能贴面刻入；尺寸/居中复用 `labels.scad`（floor + fit 保证）。
+  装不下时下半部分溢出到**背墙下区**（X-read 面）。
+- `hintFileName` 另出紧凑 2 行布局并附 `hole` 状态。
 
 ## 验证
 
 bbox（mine vs 1.0，单位 mm，dx/dy/dz）：
-- cd6/pl10/ci70/p10：`26.00/48.86/82.50` vs `26.00/49.79/83.99`
-- cd20/pl20/ci40/p10：`40.00/67.47/63.69` vs `40.00/67.52/65.30`
 
-dx 精确；dy 短 ~0.05–0.9mm（标准 `nut()`，已知）；dz 短 ~1.5mm（包络公式为功能近似）。
-文字回归 `test/test_labels_fit.py`：can_holder 4 例（ch_default/big/small/text_off）全过，总 62 例 OK。
+- cd12/pl10/ci70/p10：`32.00/55.20/85.14` vs `32.00/55.70/85.04`
+- cd6/pl12/ci55/p10：`26.00/48.85/70.92` vs `26.00/49.94/71.34`
+- cd20/pl26/ci80/p10：`40.00/80.76/99.82` vs `40.00/77.10/99.62`
+- cd20/pl20/ci40/p10：`40.00/68.51/58.51` vs `40.00/67.52/65.30`（小 ci，dz 短 ~6.8）
+- cd7/pl18/ci55/p8（open）：`23.00/53.85/72.72` vs `23.00/53.12/68.44`（大 pl，dz 长 ~4.3）
+
+`dx` 逐 mm 命中。`dy` 多在 ±1mm 内（cd20/pl26/ci80 偏 +3.7）。`dz` 在正常 pl、
+ci≥55 时 ±0.5mm；小 ci 或大 pl 的极端例偏几 mm（`0.3·pl` 底高项为功能近似）。
+文字回归 `python3 test/test_labels_fit.py`：can_holder 各例通过。
 
 ## 样例
 
