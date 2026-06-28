@@ -1,16 +1,18 @@
 module wall_anchor_basic() {
     module angle_bottom () {
         radius = 1;
-   
+        // Vertical leg fixed at the depth so the wedge top still meets the body
+        // at z = wall_anchor_depth; the horizontal leg follows wall_anchor_bottom_angle
+        // (45 deg -> equal legs, the original square wedge).
+        rise = wall_anchor_depth - (radius * 2);
+        run  = rise / tan(wall_anchor_bottom_angle);
+
         back(1)
-            yrot(90)                
+            yrot(90)
                 minkowski() {
                     linear_extrude(height = wall_anchor_width)
-                        right_triangle([
-                            wall_anchor_depth - (radius * 2),
-                            wall_anchor_depth - (radius * 2)
-                        ]);
-                    cylinder(h=0.01, r=radius, $fn=100); 
+                        right_triangle([rise, run]);
+                    cylinder(h=0.01, r=radius, $fn=100);
                 }
     }
     up(wall_anchor_depth)
@@ -75,10 +77,10 @@ module wall_anchor_screw_hole (x) {
     xrot(90)
     
     screw (
-        wall_anchor_screw_thread_diameter, 
-        thread_depth, 
-        wall_anchor_screw_head_height, 
-        wall_anchor_screw_thread_diameter
+        wall_anchor_screw_thread_diameter,
+        thread_depth,
+        wall_anchor_screw_head_height,
+        wall_anchor_screw_head_diameter
     );
 }
 
