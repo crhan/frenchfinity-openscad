@@ -83,15 +83,15 @@ python3 test/test_labels_fit.py
 
 ## 待移植清单
 
-原始 9 个清单模型 **已全部移植完成**（见下方"已完成"）。
+**全部 1.0 模型均已处理。** 原始 9 个清单模型 + 后来发现的 Bit/Tape 都已移植；
+唯一未实现的是 Triangle Top Holder（原因见下，无法可靠逆向）。
 
-后来在源目录里又发现 3 个清单外模型（task 15 评估）。它们**尚未移植**，是后续可做的候选：
-
-| 模型 | 源 | User Parameters | 形态 |
-|---|---|---|---|
-| Bit/Drill Holder | `Bit_Drill+Holder...`（= `Frenchfinity-Bit-Holder-f3z` 重复） | r, c, hd, hp, a, h | r×c 网格的斜插钻头/批头孔 |
-| Tape Holder | `Tape+Holder...` | tw, matd, mitd, rd | 胶带卷轴座（最大/最小卷径 + 卷宽） |
-| Triangle Top Holder | `Triangle-Top-Holder.f3z` | 未知（loose f3z，无 STL/模板） | 需开 Fusion 或更深挖 f3d 才能定参数 |
+**未实现（仅 1 个）：Triangle Top Holder**（`Triangle-Top-Holder.f3z`）
+- f3z 是 XRef 容器，嵌套两个 .f3d；逆向出参数：`tool_width`(≈18)、`holder_height`、
+  `triangle_height`、`tool_depth`（另一个嵌套 f3d 是 XRef 进来的 french-plate，忽略）。
+- **但没有 STL、预览只显示 XRef 的墙板、也没有结构尺寸表达式** → 只有参数名,无法确定
+  "triangle top" 到底是什么形状、四个参数怎么映射到几何。强行建模等于凭空发明,不是移植。
+- **建议**：要做的话,在 Fusion 里打开导出一个 STL（哪怕一个样本）,就能照 playbook 逆向。
 
 **重复/跳过**：`1740069021_Rectangular-Tool-Holder-f3z`、`Frenchfinity-Bit-Holder-f3z`
 是已移植件的重复；`Screwdriver-Holder-f3z` 即已有的 `screw_driver`。
@@ -107,5 +107,7 @@ python3 test/test_labels_fit.py
 - small_hole_holder（hole_width, hole_length, tool_width；功能保真,无 1.0 STL 仅按 f3d 参数推；带 cleat 的矩形孔板）
 - einhell_battery_holder（angle；功能保真,仅 1 个 1.0 STL；倾斜 U 槽电池座+背板cleat）
 - gridfinity_adapter（grid_columns, grid_rows, angle；功能保真：斜置 gridfinity 底板(42mm,带倒角卡槽)+楔形+cleat，dx=42*gc 精确）
+- bit_holder（rows, columns, hole_diameter, hole_padding, angle, height；功能保真：r×c 斜插孔块，dx=c*(hd+2hp) 精确；多行 dy 偏大于 1.0 的平行四边形）
+- tape_holder（tape_width, max/min_tape_diameter, rod_diameter；功能保真：胶带卷凹槽座，dx=tw+20/dy=matd+20.88 精确）
 已存在于 2.0（已审查对比 1.0，见 `audit-existing-components.md`）：
 wall_anchor / french_plate / screw_plate / screw_driver / box / grid（已补全）。
