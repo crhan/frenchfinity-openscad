@@ -108,6 +108,6 @@ python3 test/test_labels_fit.py
 - einhell_battery_holder（angle；功能保真,仅 1 个 1.0 STL；倾斜 U 槽电池座+背板cleat）
 - gridfinity_adapter（grid_columns, grid_rows, angle；功能保真：斜置 gridfinity 底板(42mm,带倒角卡槽)+楔形+cleat，dx=42*gc 精确）
 - bit_holder（rows, columns, hole_diameter, hole_padding, angle, height；功能保真：r×c 斜插孔块，dx=c*(hd+2hp) 精确；多行 dy 偏大于 1.0 的平行四边形）
-- tape_holder（tape_width, max/min_tape_diameter, rod_diameter；功能保真：胶带卷凹槽座，dx=tw+20/dy=matd+20.88 精确）
+- tape_holder（tape_width, max/min_tape_diameter, rest_diameter；功能保真：胶带卷凹槽座，dx=tw+20/dy=matd+20.88 精确）
 已存在于 2.0（已审查对比 1.0，见 `audit-existing-components.md`）：
 wall_anchor / french_plate / screw_plate / screw_driver / box / grid（已补全）。
