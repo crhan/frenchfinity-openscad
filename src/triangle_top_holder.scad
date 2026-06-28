@@ -15,21 +15,19 @@
 //   dy = tool_depth  + 20.88         (slot depth + back + cleat)
 //   dz = holder_height + 5
 //
-// Shape: a tall flat front plate (carries the text). At the TOP a tool cradle -
-// a pocket tw wide x td deep, open at the top, that the tool drops into, with a
-// back wall behind it carrying the french cleat. At the BOTTOM a triangular
-// gusset on the back (height th) - the "triangle" - that braces the plate and
-// rests against the wall below the cleat (anti-tilt foot). Cleat at +Y (back).
-//
-// NOTE functional fidelity: the 1.0 distributes the top depth a little
-// differently (thinner crown), but the tool slot (tw x td), the bottom triangle
-// (th), the cleat and all three bbox dimensions match.
+// Shape (verified against the 1.0 STL cross sections + iso/side, NOT the bbox --
+// the earlier port made a thin front plate with a full-depth top CUP and a huge
+// tapering foot, leaving the middle hollow; the 1.0 is a SOLID plate): a solid
+// plate (depth td + walls) the full height, with the tool slot (tw x td) cut into
+// the TOP, the french cleat on the back near the top, and a small triangular
+// gusset on the bottom-back (height th, the "triangle") that braces against the
+// wall below the cleat. Cleat at +Y (back).
 //
 
 triangle_top_holder_xwall      = 6;   // X wall each side of the slot: dx = tw + 12
-triangle_top_holder_frontwall  = 5;   // front plate thickness (Y)
-triangle_top_holder_backwall   = 5;   // wall behind the slot (Y); td + 5 + 5 = td + 10
-triangle_top_holder_floor      = 8;   // solid under the tool in the cradle (Z)
+triangle_top_holder_frontwall  = 5;   // plate in front of the slot (Y)
+triangle_top_holder_backwall   = 5;   // plate behind the slot (Y); td + 5 + 5 = td + 10
+triangle_top_holder_gusset     = 8;   // bottom-back brace depth (Y) at z = 0
 
 function triangle_top_holder_outer_width () =
     triangle_top_holder_tool_width + 2 * triangle_top_holder_xwall;
@@ -43,10 +41,10 @@ function triangle_top_holder_body_depth () =
     + triangle_top_holder_frontwall
     + triangle_top_holder_backwall;
 
-// Cradle (top block) height: tall enough to seat the tool over the floor.
-function triangle_top_holder_cradle_height () =
-    min(triangle_top_holder_outer_height(),
-        triangle_top_holder_floor + triangle_top_holder_tool_depth + 14);
+// Tool slot depth (Z from the top): the tool's top drops into the slot.
+function triangle_top_holder_slot_depth () =
+    min(triangle_top_holder_outer_height() - 12,
+        triangle_top_holder_tool_depth + 18);
 
 module triangle_top_holder_body () {
     w     = triangle_top_holder_outer_width();
@@ -57,28 +55,24 @@ module triangle_top_holder_body () {
     th    = triangle_top_holder_triangle_height;
     xw    = triangle_top_holder_xwall;
     fw    = triangle_top_holder_frontwall;
-    floor_t = triangle_top_holder_floor;
-    ch    = triangle_top_holder_cradle_height();
+    g     = triangle_top_holder_gusset;
+    sd    = triangle_top_holder_slot_depth();
 
     union () {
-        // front plate, full height
-        cube([w, fw, hz]);
-
-        // top cradle: full-depth block with a tool pocket open at the top
+        // SOLID plate, full depth, full height
         difference () {
-            translate([0, 0, hz - ch])
-                cube([w, d, ch]);
-            // tool slot: tw wide, td deep, open top, sitting on `floor_t`
-            translate([xw, fw, hz - ch + floor_t])
-                cube([tw, td, ch]);
+            cube([w, d, hz]);
+            // tool slot cut into the top: tw wide, td deep, open at the top
+            translate([xw, fw, hz - sd])
+                cube([tw, td, sd + 1]);
         }
-
-        // bottom-back triangular foot (height th): right triangle in Y-Z,
-        // deepest (Y=d) at z=0, tapering to the front plate (Y=fw) at z=th.
+        // bottom-back triangular gusset (height th): braces the wall below the
+        // cleat. Right triangle in Y-Z: deepest (Y = d + g) at z = 0, back to the
+        // plate (Y = d) at z = th. Stays within the cleat's Y, so dy is unchanged.
         if (th > 0)
             rotate([90, 0, 90])
                 linear_extrude(w)
-                    polygon([[fw, 0], [d, 0], [fw, min(th, hz)]]);
+                    polygon([[d, 0], [d + g, 0], [d, min(th, hz)]]);
     }
 }
 
