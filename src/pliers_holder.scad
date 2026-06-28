@@ -40,6 +40,7 @@ pliers_holder_seat_frac    = 0.55;  // seat top as a fraction of the height abov
 pliers_holder_prong_depth  = 13;    // depth of the top saddle notch (Z), top anchored
 pliers_holder_hole_bridge  = 4;     // solid bridge between the saddle and the hole (Z)
 pliers_holder_hole_floor   = 12;    // minimum solid material kept below the hole (Z)
+pliers_holder_front_wall   = 6;     // solid front wall (Y); the 1.0 front is closed
 
 function pliers_holder_outer_width() =
     pliers_holder_hole_diameter + (pliers_holder_side_wall * 2);
@@ -98,28 +99,33 @@ module pliers_holder_y_capsule (cx, cz, wd, ht, y0, y1) {
 }
 
 // Everything cut from the body, as a positive. Two features, both centred in X
-// and cut through the whole depth (Y) so they read as real openings from the
-// front: a see-through capsule hole (width hd) low-middle, and a rounded saddle
-// notch in the top edge that splits the top into two prongs (above the cleat).
+// and cut only through the SEAT depth (front wall + back plate stay solid, like
+// the 1.0 whose front face is closed): a capsule cavity (width hd) low-middle the
+// pliers drop into, and a rounded saddle notch in the top edge that splits the
+// top into two prongs (above the cleat). The pliers load from the top.
 module pliers_holder_slot () {
     w   = pliers_holder_outer_width();
     h   = pliers_holder_outer_height();
     d   = pliers_holder_body_depth;
     hd  = pliers_holder_hole_diameter;
+    fw  = pliers_holder_front_wall;
+    pl  = pliers_holder_plate_depth;
     cx  = w / 2;
     hh  = pliers_holder_hole_height();
+    y0  = fw;                       // front wall stays solid
+    y1  = d - pl;                   // back plate (cleat) stays solid
 
-    // capsule hole: top anchored, sitting a bridge below the saddle notch
+    // capsule cavity: top anchored, sitting a bridge below the saddle notch
     hole_top = h - pliers_holder_prong_depth - pliers_holder_hole_bridge;
     hole_cz  = hole_top - hh / 2;
-    pliers_holder_y_capsule(cx, hole_cz, hd, hh, -1, d + 1);
+    pliers_holder_y_capsule(cx, hole_cz, hd, hh, y0, y1);
 
     // saddle notch: rounded U cut into the top edge -> two prongs
     saddle_bot = h - pliers_holder_prong_depth;
-    translate([cx, -1, saddle_bot])
-        rotate([-90, 0, 0]) cylinder(h = d + 2, d = hd, $fn = 96);   // rounded bottom
-    translate([cx - hd / 2, -1, saddle_bot])
-        cube([hd, d + 2, pliers_holder_prong_depth + 1]);            // straight sides up
+    translate([cx, y0, saddle_bot])
+        rotate([-90, 0, 0]) cylinder(h = y1 - y0, d = hd, $fn = 96);   // rounded bottom
+    translate([cx - hd / 2, y0, saddle_bot])
+        cube([hd, y1 - y0, pliers_holder_prong_depth + 1]);            // straight sides up
 }
 
 module pliers_holder_with_nut () {
@@ -151,19 +157,17 @@ module pliers_holder_with_nut () {
 // size and spills onto the opposite wall if the right wall cannot hold them all.
 module pliers_holder_labels_only () {
     w    = pliers_holder_outer_width();
-    d    = pliers_holder_body_depth;
-    seat = pliers_holder_seat_depth;
     stop = pliers_holder_seat_top();
-    yc   = d - (seat / 2);
 
-    labelLines(
+    // The front face is now solid (the slot loads from the top), so engrave there
+    // (X-read, faces -Y, no flip), in the lower seat region as the 1.0 does.
+    labelFace(
         [
             final_version_prefix_calculated,
             str("h",  pliers_holder_height),
             str("hd", pliers_holder_hole_diameter)
         ],
-        ["y", yc, w, seat, 2, stop, "right"],
-        ["y", yc, 0, seat, 2, stop, "left"]
+        ["x", w / 2, 0, w, 2, stop]
     );
 }
 

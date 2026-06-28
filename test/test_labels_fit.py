@@ -115,13 +115,13 @@ PH = "pliers_holder_"
 
 
 def ph_bounds(p):
-    # Labels live inside the always-solid seat rectangle (see pliers_holder.scad):
-    # Z in [0, seat_top], Y in [body_depth - seat_depth, body_depth].
+    # Labels are on the now-solid front face (X-read): Z in [0, seat_top], X in
+    # [0, width]. (The slot loads from the top, so the front stays solid.)
     toe, seat_frac, base_extra = 10, 0.55, 6
-    body_depth, seat_depth = 80, 54
     h = p[PH + "height"] + base_extra
     seat_top = toe + (h - toe) * seat_frac
-    return [(2, 0.0, seat_top), (1, body_depth - seat_depth, body_depth)]
+    w = p[PH + "hole_diameter"] + 15
+    return [(2, 0.0, seat_top), (0, 0.0, w)]
 
 
 PH_CASES = [
