@@ -55,9 +55,11 @@ module bit_holder_slab () {
 
     difference () {
         cube([w, len, t]);
+        // bore drilled DOWN from the top face (z = t) by `height`, leaving the
+        // `floor` solid below; +1 overcut above the surface so it opens cleanly.
         for (rr = [0 : bit_holder_rows - 1])
             for (cc = [0 : bit_holder_columns - 1])
-                translate([hp + hd / 2 + cc * p, hp + hd / 2 + rr * p, t + 1])
+                translate([hp + hd / 2 + cc * p, hp + hd / 2 + rr * p, t - bit_holder_height])
                     cylinder(d = hd, h = bit_holder_height + 1, $fn = 48);
     }
 }
