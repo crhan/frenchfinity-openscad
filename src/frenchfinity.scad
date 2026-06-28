@@ -6,7 +6,7 @@ include <../lib/BOSL2/std.scad>
 //
 
 /* [Feature] */
-feature = "wall_anchor"; //[box, bit_holder, can_holder, einhell_battery_holder, french_plate, grid, gridfinity_adapter, hammer_holder, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, small_hole_holder, tape_holder, wall_anchor, wrench_holder]
+feature = "wall_anchor"; //[box, bit_holder, can_holder, einhell_battery_holder, french_plate, grid, gridfinity_adapter, hammer_holder, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, small_hole_holder, tape_holder, triangle_top_holder, wall_anchor, wrench_holder]
 
 /* [Wall anchor] */
 wall_anchor_height                = 60;
@@ -134,6 +134,16 @@ tape_holder_min_tape_diameter = 45;
 // Rod diameter relief (rd)
 tape_holder_rest_diameter = 4;
 
+/* [Triangle top holder] */
+// Tool slot width (tw)
+triangle_top_holder_tool_width = 35;
+// Tool slot depth (td)
+triangle_top_holder_tool_depth = 17.5;
+// Overall body height (hh)
+triangle_top_holder_holder_height = 100;
+// Bottom triangular foot height (th)
+triangle_top_holder_triangle_height = 25;
+
 /* [Wrench holder] */
 // Length of the rack out from the wall; more length = more slots (w)
 wrench_holder_width        = 40;
@@ -239,6 +249,7 @@ include <screw_driver.scad>
 include <screw_plate.scad>
 include <small_hole_holder.scad>
 include <tape_holder.scad>
+include <triangle_top_holder.scad>
 include <wall_anchor.scad>
 include <wrench_holder.scad>
 
@@ -273,6 +284,7 @@ module render_selected_feature () {
     if (feature == "screw_driver") feature_screw_driver();
     if (feature == "small_hole_holder") feature_small_hole_holder();
     if (feature == "tape_holder")  feature_tape_holder();
+    if (feature == "triangle_top_holder") feature_triangle_top_holder();
     if (feature == "wall_anchor")  feature_wall_anchor();
     if (feature == "wrench_holder") feature_wrench_holder();
 }

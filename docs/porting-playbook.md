@@ -83,18 +83,17 @@ python3 test/test_labels_fit.py
 
 ## 待移植清单
 
-**全部 1.0 模型均已处理。** 原始 9 个清单模型 + 后来发现的 Bit/Tape 都已移植；
-唯一未实现的是 Triangle Top Holder（原因见下，无法可靠逆向）。
+**全部 1.0 模型均已移植完成。** 原始 9 个清单模型 + 后来发现的 Bit/Tape/Triangle 全部完成。
 
-**未实现（仅 1 个）：Triangle Top Holder**（`Triangle-Top-Holder.f3z`）
-- f3z 是 XRef 容器，嵌套两个 .f3d；逆向出参数：`tool_width`(≈18)、`holder_height`、
-  `triangle_height`、`tool_depth`（另一个嵌套 f3d 是 XRef 进来的 french-plate，忽略）。
-- **但没有 STL、预览只显示 XRef 的墙板、也没有结构尺寸表达式** → 只有参数名,无法确定
-  "triangle top" 到底是什么形状、四个参数怎么映射到几何。强行建模等于凭空发明,不是移植。
-- **建议**：要做的话,在 Fusion 里打开导出一个 STL（哪怕一个样本）,就能照 playbook 逆向。
+Triangle Top Holder 一度因 loose f3z 无 STL 而记录跳过；后来用户从 Fusion 导出 2 个 STL，
+据此完成了功能保真移植（见 `reverse-engineering-triangle-top-holder.md`）。
 
 **重复/跳过**：`1740069021_Rectangular-Tool-Holder-f3z`、`Frenchfinity-Bit-Holder-f3z`
 是已移植件的重复；`Screwdriver-Holder-f3z` 即已有的 `screw_driver`。
+
+**坑（Fusion 导出的 STL 是 ASCII）**：`tools/stl_analyze.py` 只读二进制 STL；
+1.0 手动导出的 STL 默认是 ASCII，得先 `openscad -o x.stl --export-format binstl`（用 `import()` 包一下）
+转成二进制再量 bbox/回归。
 
 已完成：
 - rectangular_tool_holder（本手册的范例，见 `reverse-engineering-rectangular-tool-holder.md`）
@@ -109,5 +108,6 @@ python3 test/test_labels_fit.py
 - gridfinity_adapter（grid_columns, grid_rows, angle；功能保真：斜置 gridfinity 底板(42mm,带倒角卡槽)+楔形+cleat，dx=42*gc 精确）
 - bit_holder（rows, columns, hole_diameter, hole_padding, angle, height；功能保真：r×c 斜插孔块，dx=c*(hd+2hp) 精确；多行 dy 偏大于 1.0 的平行四边形）
 - tape_holder（tape_width, max/min_tape_diameter, rest_diameter；功能保真：胶带卷凹槽座，dx=tw+20/dy=matd+20.88 精确）
+- triangle_top_holder（tool_width, tool_depth, holder_height, triangle_height；功能保真：顶部托槽+底部三角支脚+cleat，dx=tw+12/dz=hh+5 精确，见 `reverse-engineering-triangle-top-holder.md`）
 已存在于 2.0（已审查对比 1.0，见 `audit-existing-components.md`）：
 wall_anchor / french_plate / screw_plate / screw_driver / box / grid（已补全）。

@@ -340,6 +340,26 @@ GF_CASES = [
 
 
 # --------------------------------------------------------------------------
+# Triangle top holder suite
+# --------------------------------------------------------------------------
+TT = "triangle_top_holder_"
+
+
+def tt_bounds(p):
+    w = p[TT + "tool_width"] + 12
+    hz = p[TT + "holder_height"] + 5
+    return [(2, 0.0, hz), (0, 0.0, w)]
+
+
+TT_CASES = [
+    ("tt_default", dict(tool_width=35, tool_depth=17.5, holder_height=100, triangle_height=25), False),
+    ("tt_wide",    dict(tool_width=96, tool_depth=11, holder_height=155, triangle_height=47), False),
+    ("tt_small",   dict(tool_width=12, tool_depth=8, holder_height=40, triangle_height=15), False),
+    ("tt_text_off", dict(tool_width=35, tool_depth=17.5, holder_height=100, triangle_height=25, render_text=False), True),
+]
+
+
+# --------------------------------------------------------------------------
 # Tape holder suite
 # --------------------------------------------------------------------------
 TP = "tape_holder_"
@@ -384,6 +404,7 @@ SUITES = [
     ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
     ("bit_holder",              os.path.join(HERE, "labels_only_bit.scad"),    BH,  bh_bounds,  BH_CASES),
     ("tape_holder",             os.path.join(HERE, "labels_only_tape.scad"),   TP,  tp_bounds,  TP_CASES),
+    ("triangle_top_holder",     os.path.join(HERE, "labels_only_triangle.scad"), TT, tt_bounds, TT_CASES),
     ("can_holder",              os.path.join(HERE, "labels_only_can.scad"),    CH,  ch_bounds,  CH_CASES),
     ("hammer_holder",           os.path.join(HERE, "labels_only_hammer.scad"), HM,  hm_bounds,  HM_CASES),
     ("wrench_holder",           os.path.join(HERE, "labels_only_wrench.scad"), WR,  wr_bounds,  WR_CASES),
