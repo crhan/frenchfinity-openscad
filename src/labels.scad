@@ -87,6 +87,27 @@ module labelFace (lines, face) {
     }
 }
 
+// Engrave `lines` flat on a HORIZONTAL top face (reads along X, lines stacked
+// along Y), centred on (x_c, y_c) within a (width x depth) area at height z_top.
+// Cuts text_depth down into the surface. Use for parts whose only roomy flat
+// area is a top deck (combs / cradles whose vertical walls are too short for
+// stacked text). Same floor + fit sizing as labelFace.
+module labelTop (lines, x_c, y_c, width, depth, z_top) {
+    n = len(lines);
+    if (render_text && n > 0) {
+        mc   = max([for (s = lines) len(s)]);
+        size = labelSize(n, mc, depth, width);
+        if (size > 0.3 && depth > 2 * TEXT_MARGIN) {
+            pitch = size * TEXT_LINE_K;
+            ytop  = y_c + (n - 1) * pitch / 2;     // back line, stack toward -Y
+            // sink the glyphs so their TOP sits flush with z_top, cutting down
+            for (i = [0 : n - 1])
+                translate([x_c, ytop - i * pitch, z_top - text_depth])
+                    text3d(lines[i], size = size, height = text_depth * 2, anchor = CENTER);
+        }
+    }
+}
+
 // Engrave `lines`, spilling the overflow half onto faceB when they will not fit
 // faceA at the floor size. Pass a single face for no-spill behaviour.
 module labelLines (lines, faceA, faceB = undef) {

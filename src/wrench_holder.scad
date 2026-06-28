@@ -14,55 +14,80 @@
 //   dz = max(14.20, 11.2*scale + 7.4)  (scale drives height, floored)
 //   wrench_width: internal slot gap only (bbox identical when only ww changes)
 //
-// Shape: a cleat base at the back, two side rails (combs) running forward with
-// inward teeth that form a row of open-top slots; a wrench drops into a slot and
-// is held between the teeth. Cleat at +Y (back). The cross-section (rails +
-// channel + height) scales with `scale`; the slot count grows with `width`.
+// Shape (verified against the 1.0 STL cross-section by cross-section AND the
+// top-down render, NOT by the bbox): a tall full-width cleat block at the back,
+// and TWO continuous side rails that cantilever forward from it with an OPEN
+// channel between them (no floor). Notches (slots, width = wrench_width) are cut
+// from the top into the INNER edge of each rail (the channel-facing side); the
+// outer edge of each rail stays continuous for strength. A wrench is laid across
+// the channel and drops into an aligned inner-notch pair; the head rests on the
+// rail tops, the handle hangs in the open channel. Cleat at +Y (back). The
+// cross-section scales with `scale`, the slot count grows with `width`.
+//
+// Measured at scale 1 (ww8/w60): cleat block h 18.6, rails ~11 tall (0.6 h),
+// notch depth ~5 (0.27 h), tooth ~3.3, slot = ww, rack region Y = width (60),
+// solid back block ~15 deep.
 //
 
-wrench_holder_base_depth = 15;   // cleat base block depth (Y): dy = width + base + 10.88
-wrench_holder_tooth      = 4;    // tooth length along Y at scale 1 (slot pitch = ww + tooth)
+wrench_holder_base_depth = 15;   // solid cleat block depth (Y): dy = width + base + 10.88
+wrench_holder_tooth      = 3.3;  // tooth (divider) width along Y; slot pitch = ww + tooth
 
 function wrench_holder_outer_width () =
     44.77 * wrench_holder_scale + 4.49;
 
-function wrench_holder_outer_height () =
+function wrench_holder_outer_height () =      // cleat block height (Z)
     max(14.20, 11.2 * wrench_holder_scale + 7.4);
 
-function wrench_holder_rail_width () =
-    wrench_holder_outer_width() * 0.30;     // each side rail (X)
+function wrench_holder_rail_height () =       // rails are shorter than the cleat
+    wrench_holder_outer_height() * 0.60;
+
+function wrench_holder_slot_depth () =        // notch depth cut into the rail top
+    wrench_holder_outer_height() * 0.27;
+
+function wrench_holder_rail_width () =        // each side rail (X)
+    wrench_holder_outer_width() * 0.18;
+
+function wrench_holder_margin () =            // rack inset from the block edge (X)
+    wrench_holder_outer_width() * 0.11;
 
 module wrench_holder_body () {
-    w     = wrench_holder_outer_width();
-    h     = wrench_holder_outer_height();
-    L     = wrench_holder_width + wrench_holder_base_depth;   // body Y (+ cleat = dy)
-    base  = wrench_holder_base_depth;
-    rail  = wrench_holder_rail_width();
-    floor_t = h * 0.30;                       // channel floor thickness (Z)
-    tooth = wrench_holder_tooth;
-    pitch = wrench_holder_wrench_width + tooth;
-    teeth = max(1, floor((wrench_holder_width - tooth) / pitch));
-    tin   = rail * 0.6;                       // how far a tooth reaches inward (X)
+    w      = wrench_holder_outer_width();
+    h      = wrench_holder_outer_height();
+    rh     = wrench_holder_rail_height();
+    sd     = wrench_holder_slot_depth();
+    L      = wrench_holder_width + wrench_holder_base_depth;   // body Y (+ cleat = dy)
+    base   = wrench_holder_base_depth;
+    rail   = wrench_holder_rail_width();
+    margin = wrench_holder_margin();
+    tooth  = wrench_holder_tooth;
+    pitch  = wrench_holder_wrench_width + tooth;
+    rack   = wrench_holder_width;                              // slotted length (Y)
+    slots  = max(1, floor((rack - tooth) / pitch));
+    span   = rack - (slots * pitch - wrench_holder_wrench_width); // leftover, to centre
+    y0     = max(tooth, span / 2);                            // first slot start
 
     difference () {
         union () {
-            // cleat base block at the back
+            // full-width cleat block at the back
             translate([0, L - base, 0]) cube([w, base, h]);
-            // two side rails (combs) running the full length forward
-            cube([rail, L, h]);
-            translate([w - rail, 0, 0]) cube([rail, L, h]);
-            // channel floor
-            cube([w, L, floor_t]);
-            // inward teeth on each rail, forming the slots
-            for (i = [0 : teeth - 1])
-                translate([0, tooth / 2 + i * pitch, 0]) {
-                    translate([rail, 0, 0])           cube([tin, tooth, h]);
-                    translate([w - rail - tin, 0, 0]) cube([tin, tooth, h]);
-                }
+            // two short side rails cantilevered forward, open channel between
+            translate([margin,           0, 0]) cube([rail, L - base, rh]);
+            translate([w - margin - rail, 0, 0]) cube([rail, L - base, rh]);
         }
-        // screw / filament relief hole through the base, near the bottom
+        // notches cut from the top into the INNER edge of each rail
+        ndepth = rail * 0.7;                                  // how far into the rail (X)
+        for (i = [0 : slots - 1])
+            translate([0, y0 + i * pitch, rh - sd]) {
+                // left rail: notch on its right (inner) edge
+                translate([margin + rail - ndepth, 0, 0])
+                    cube([ndepth, wrench_holder_wrench_width, sd + 1]);
+                // right rail: notch on its left (inner) edge
+                translate([w - margin - rail, 0, 0])
+                    cube([ndepth, wrench_holder_wrench_width, sd + 1]);
+            }
+        // screw / filament relief hole through the back block, near the bottom
         translate([w / 2, L - base / 2, -1])
-            cylinder(d = 3, h = floor_t + 2, $fn = 48);
+            cylinder(d = 3, h = h + 2, $fn = 48);
     }
 }
 
@@ -80,22 +105,24 @@ module wrench_holder_with_nut () {
 }
 
 module wrench_holder_labels_only () {
-    w = wrench_holder_outer_width();
-    h = wrench_holder_outer_height();
-    L = wrench_holder_width + wrench_holder_base_depth;
+    w      = wrench_holder_outer_width();
+    h      = wrench_holder_outer_height();
+    rh     = wrench_holder_rail_height();
+    L      = wrench_holder_width + wrench_holder_base_depth;
+    rack   = wrench_holder_width;                 // rail length (Y)
+    margin = wrench_holder_margin();
 
-    // The rack is short (~18 mm) and the full-width cleat covers the back face,
-    // so engrave on the long rail SIDE faces (Y-read) like the rectangular
-    // holder: v / ww on the right rail, w / s on the left. Floored, no spill
-    // (the rails are long enough).
-    labelLines(
-        [final_version_prefix_calculated, str("ww", wrench_holder_wrench_width)],
-        ["y", L / 2, w, L, 1.5, h - 1.5, "right"]
-    );
-    labelLines(
-        [str("w", wrench_holder_width), str("s", wrench_holder_scale)],
-        ["y", L / 2, 0, L, 1.5, h - 1.5, "left"]
-    );
+    // The rails are short in Z (one line tall). Put the version + ww flat on the
+    // cleat block's top deck (the only roomy flat area), and w / s as single
+    // lines along the long rail outer faces (Y-read, correct orientation).
+    labelTop([final_version_prefix_calculated,
+              str("ww", wrench_holder_wrench_width)],
+             w / 2, L - wrench_holder_base_depth / 2,
+             w, wrench_holder_base_depth, h);
+    labelFace([str("w", wrench_holder_width)],
+              ["y", rack / 2, w - margin, rack - 2, 0.5, rh - 0.5, "right"]);
+    labelFace([str("s", wrench_holder_scale)],
+              ["y", rack / 2, margin,     rack - 2, 0.5, rh - 0.5, "left"]);
 }
 
 module wrench_holder_with_nut_and_text () {
