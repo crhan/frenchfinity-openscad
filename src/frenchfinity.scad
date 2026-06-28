@@ -6,7 +6,7 @@ include <../lib/BOSL2/std.scad>
 //
 
 /* [Feature] */
-feature = "wall_anchor"; //[box, can_holder, einhell_battery_holder, french_plate, grid, gridfinity_adapter, hammer_holder, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, small_hole_holder, wall_anchor, wrench_holder]
+feature = "wall_anchor"; //[box, bit_holder, can_holder, einhell_battery_holder, french_plate, grid, gridfinity_adapter, hammer_holder, hook, pliers_holder, rectangular_tool_holder, round_hanging_holder, screw_plate, screw_driver, small_hole_holder, wall_anchor, wrench_holder]
 
 /* [Wall anchor] */
 wall_anchor_height                = 60;
@@ -132,6 +132,20 @@ wrench_holder_wrench_width = 8;
 // Scales the rack cross-section (width & height) (s)
 wrench_holder_scale        = 1;
 
+/* [Bit holder] */
+// Rows of bit holes (r)
+bit_holder_rows = 1;
+// Columns of bit holes (c)
+bit_holder_columns = 1;
+// Bit hole diameter (hd)
+bit_holder_hole_diameter = 10;
+// Wall around each hole (hp)
+bit_holder_hole_padding = 10;
+// Hole tilt from vertical (a)
+bit_holder_angle = 30;
+// Bit hole depth / body height driver (h)
+bit_holder_height = 20;
+
 /* [Box] */
 box_width          = 50;
 box_depth          = 30;
@@ -200,6 +214,7 @@ include <screws.scad>
 //
 
 include <box.scad>
+include <bit_holder.scad>
 include <can_holder.scad>
 include <einhell_battery_holder.scad>
 include <french_plate.scad>
@@ -232,6 +247,7 @@ include <wrench_holder.scad>
 
 module render_selected_feature () {
     if (feature == "box")          feature_box();
+    if (feature == "bit_holder")   feature_bit_holder();
     if (feature == "can_holder")   feature_can_holder();
     if (feature == "einhell_battery_holder") feature_einhell_battery_holder();
     if (feature == "french_plate") feature_french_plate();

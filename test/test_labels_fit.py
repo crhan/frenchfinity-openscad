@@ -339,8 +339,29 @@ GF_CASES = [
 ]
 
 
+# --------------------------------------------------------------------------
+# Bit holder suite
+# --------------------------------------------------------------------------
+BH = "bit_holder_"
+
+
+def bh_bounds(p):
+    w = p[BH + "columns"] * (p[BH + "hole_diameter"] + 2 * p[BH + "hole_padding"])
+    bh = 1.5 * p[BH + "height"] + 10
+    return [(2, 0.0, bh), (0, 0.0, w)]
+
+
+BH_CASES = [
+    ("bh_default", dict(rows=1, columns=1, hole_diameter=10, hole_padding=10, angle=30, height=20), False),
+    ("bh_grid",    dict(rows=3, columns=2, hole_diameter=8, hole_padding=8, angle=30, height=25), False),
+    ("bh_tall",    dict(rows=1, columns=1, hole_diameter=13, hole_padding=10, angle=30, height=50), False),
+    ("bh_text_off", dict(rows=1, columns=1, hole_diameter=10, hole_padding=10, angle=30, height=20, render_text=False), True),
+]
+
+
 SUITES = [
     ("rectangular_tool_holder", os.path.join(HERE, "labels_only.scad"),        RTH, rth_bounds, RTH_CASES),
+    ("bit_holder",              os.path.join(HERE, "labels_only_bit.scad"),    BH,  bh_bounds,  BH_CASES),
     ("can_holder",              os.path.join(HERE, "labels_only_can.scad"),    CH,  ch_bounds,  CH_CASES),
     ("hammer_holder",           os.path.join(HERE, "labels_only_hammer.scad"), HM,  hm_bounds,  HM_CASES),
     ("wrench_holder",           os.path.join(HERE, "labels_only_wrench.scad"), WR,  wr_bounds,  WR_CASES),
