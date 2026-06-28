@@ -22,9 +22,15 @@
 
 gridfinity_adapter_pitch    = 42;    // gridfinity grid pitch
 gridfinity_adapter_bed      = 5;     // baseplate thickness (perpendicular to bed)
-gridfinity_adapter_corner   = 4;     // cell corner radius
+gridfinity_adapter_corner   = 3.75;  // gridfinity outer corner radius
 gridfinity_adapter_clear    = 0.5;   // total X/Y clearance per cell (bin fit)
-gridfinity_adapter_chamfer  = 2.4;   // top socket chamfer (the bin clip lip)
+
+// Standard gridfinity baseplate socket profile (heights, from the top opening
+// down): a 2.15 mm 45deg lead-in chamfer, 1.8 mm vertical, 0.8 mm 45deg chamfer
+// -- so a real gridfinity bin foot clips in. Total 4.75 mm.
+gridfinity_adapter_lip_top  = 2.15;
+gridfinity_adapter_lip_mid  = 1.80;
+gridfinity_adapter_lip_bot  = 0.80;
 
 function gridfinity_adapter_tilt () = 2 * gridfinity_adapter_angle;
 
@@ -34,21 +40,30 @@ module gf_rsq (half) {
     offset(r) square([2 * (half - r), 2 * (half - r)], center = true);
 }
 
-// One gridfinity cell socket, subtractive, cut downward from z = 0 (bed top).
+// one thin rounded-square layer at height z, half-size `half`.
+module gf_layer (z, half) {
+    translate([0, 0, z]) linear_extrude(0.02) gf_rsq(half);
+}
+
+// One gridfinity cell socket, subtractive, cut downward from z = 0 (bed top),
+// using the standard 3-step baseplate profile so real bins seat/clip.
 module gf_socket () {
-    half = gridfinity_adapter_pitch / 2 - gridfinity_adapter_clear / 2;  // ~20.75
-    ch   = gridfinity_adapter_chamfer;
-    bed  = gridfinity_adapter_bed;
+    h0  = gridfinity_adapter_pitch / 2 - gridfinity_adapter_clear / 2;  // ~20.75
+    ct  = gridfinity_adapter_lip_top;
+    cm  = gridfinity_adapter_lip_mid;
+    cb  = gridfinity_adapter_lip_bot;
+    bed = gridfinity_adapter_bed;
+    h1  = h0 - ct;          // half after the top chamfer
+    h2  = h1 - cb;          // half after the bottom chamfer
+    z1  = -ct;              // bottom of the top chamfer
+    z2  = z1 - cm;          // bottom of the straight section
+    z3  = z2 - cb;          // socket floor
 
     union () {
-        // top chamfer (the clip lip): full size down to full - chamfer
-        hull () {
-            translate([0, 0, 0.01])  linear_extrude(0.02) gf_rsq(half);
-            translate([0, 0, -ch])   linear_extrude(0.02) gf_rsq(half - ch);
-        }
-        // straight pocket below
-        translate([0, 0, -bed - 1])
-            linear_extrude(bed + 1 - ch + 0.02) gf_rsq(half - ch);
+        hull () { gf_layer(0.01, h0); gf_layer(z1, h1); }   // top lead-in chamfer
+        hull () { gf_layer(z1, h1);   gf_layer(z2, h1); }   // vertical
+        hull () { gf_layer(z2, h1);   gf_layer(z3, h2); }   // bottom chamfer
+        // socket floor sits at z3; a thin solid floor (bed - 4.75) remains below.
     }
 }
 
