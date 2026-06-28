@@ -388,9 +388,10 @@ BH = "bit_holder_"
 
 
 def bh_bounds(p):
-    # columns share their inner wall: dx = c*hd + (c+1)*hp
+    # columns share their inner wall: dx = c*hd + (c+1)*hp; labels are on the back
+    # plate, height = plate + slab_thick = height + (6 floor) + (6 plate).
     w = p[BH + "columns"] * p[BH + "hole_diameter"] + (p[BH + "columns"] + 1) * p[BH + "hole_padding"]
-    bh = 1.5 * p[BH + "height"] + 10
+    bh = p[BH + "height"] + 12
     return [(2, 0.0, bh), (0, 0.0, w)]
 
 
