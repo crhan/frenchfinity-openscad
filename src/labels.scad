@@ -35,20 +35,24 @@ module labelVertical (text, width_box, y, x = 0) {
 //   face_width available width (X) of the face
 //   z0, z1     bottom / top of the Z region the block must stay within
 module labelBlockVertical (lines, x_pos, y_face, face_width, z0, z1) {
-    if (render_text && len(lines) > 0) {
-        n        = len(lines);
-        maxchars = max([for (s = lines) len(s)]);
-        glyph_k  = 1.1;   // glyph height as a multiple of size (~1.02 measured)
-        line_k   = 1.4;   // line pitch as a multiple of size
-        char_k   = 0.70;  // glyph advance per char (~0.66 measured)
-        margin   = 1.5;
-        region_h = z1 - z0;
+    n        = len(lines);
+    maxchars = n > 0 ? max([for (s = lines) len(s)]) : 1;
+    glyph_k  = 1.1;   // glyph height as a multiple of size (~1.02 measured)
+    line_k   = 1.4;   // line pitch as a multiple of size
+    char_k   = 0.70;  // glyph advance per char (~0.66 measured)
+    margin   = 1.5;
+    region_h = z1 - z0;
 
-        size_fit_h = (region_h - 2 * margin) / (glyph_k + (n - 1) * line_k);
-        size_fit_w = (face_width - 2 * margin) / (maxchars * char_k);
-        size       = min(text_size, size_fit_h, size_fit_w);
-        pitch      = size * line_k;
-        glyph_h    = size * glyph_k;
+    size_fit_h = (region_h - 2 * margin) / (glyph_k + (n - 1) * line_k);
+    size_fit_w = (face_width - 2 * margin) / (maxchars * char_k);
+    size       = min(text_size, size_fit_h, size_fit_w);
+    pitch      = size * line_k;
+    glyph_h    = size * glyph_k;
+
+    // Skip entirely if the region/face is too small to hold even a sliver of
+    // text - otherwise a degenerate region (z1 <= z0, e.g. a tiny screwdriver
+    // padding_top) would make size negative and text3d fail.
+    if (render_text && n > 0 && size > 0.3) {
 
         // baseline of the top line; centres the block within [z0, z1]
         ztop = z0 + (region_h - glyph_h + (n - 1) * pitch) / 2;
