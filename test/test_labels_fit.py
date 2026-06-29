@@ -224,12 +224,13 @@ def ch_bounds(p):
     ci = p[CH + "can_inset"]
     pl = p[CH + "padding_left"]
     w = cd + 2 * pp
-    # geometry-derived height: base(9+0.3*pl) + ci*cos(angle) + r*sin(angle) + rim,
-    # plus a small fillet/rounding margin. Default angle=10. Use a generous upper
-    # bound so the front-face labels (placed below the bore opening) sit inside it.
+    # geometry-derived height (matches can_holder_height): base(9+0.3*pl)
+    # + (ci+rim)*cos(angle) + (r+leadin)*sin(angle), default angle=10, rim=4, leadin=3.
+    # The deck's front edge lands at the bore opening's back rim; labels sit below
+    # the cleat on the back face, well inside [0, h].
     r = (cd + 2) / 2
     a = 10
-    h = (9 + 0.3 * pl) + ci * math.cos(math.radians(a)) + r * math.sin(math.radians(a)) + 6
+    h = (9 + 0.3 * pl) + (ci + 4) * math.cos(math.radians(a)) + (r + 3) * math.sin(math.radians(a))
     # back face X-read (below the cleat): check Z in [0, h] and X in [0, w]
     return [(2, 0.0, h), (0, 0.0, w)]
 

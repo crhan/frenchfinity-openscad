@@ -44,7 +44,8 @@
 can_holder_clearance = 2;     // bore = can_diameter + this (fit slack)
 can_holder_rim       = 4;     // solid lip (along the bore axis) above the opening
 can_holder_leadin    = 3;     // 45 deg lead-in chamfer at the bore mouth
-can_holder_fillet    = 1.2;   // rounding on the vertical edges
+can_holder_fillet    = 2;     // rounding radius on the FRONT + TOP edges (1.0 rounds
+                              // these); the BACK / cleat edges stay sharp (joint fit)
 can_holder_drain     = 6;     // drain hole diameter for bottom = "open"
 
 function can_holder_outer_width () =
@@ -56,14 +57,19 @@ function can_holder_bore_d () =
 // solid base height below the bore floor (measured: ~9 + 0.3*pl)
 function can_holder_base () = 9 + 0.3 * can_holder_padding_left;
 
-// Vertical height of the flat top cap. The bore opening's high edge sits at
-// base + ci*cos(a) + r*sin(a); the cap clears it by `rim` so a solid lip remains.
+// Vertical height of the flat top deck. Set so the deck's front edge lands exactly
+// at the BACK rim of the bore opening: the bore opens cleanly in the sloped roof and
+// the flat deck fills the area behind it (matching 1.0). If the deck were any deeper
+// it would cut into the opening and leave an incomplete rim. Geometry: the opening's
+// back rim point sits at z = base + L*cos(a) + (r+leadin)*sin(a) on the perpendicular
+// roof, where L = ci + rim is the axial floor->roof distance.
 function can_holder_height () =
-    let (a = can_holder_angle, r = can_holder_bore_d() / 2)
+    let (a = can_holder_angle,
+         r = can_holder_bore_d() / 2,
+         L = can_holder_can_inset + can_holder_rim)
     can_holder_base()
-    + can_holder_can_inset * cos(a)
-    + r * sin(a)
-    + can_holder_rim;
+    + L * cos(a)
+    + (r + can_holder_leadin) * sin(a);
 
 // Back wall thickness at the bore floor (the bore sits this far in front of the
 // vertical back face). Small at the floor; the lean adds material higher up.
@@ -86,13 +92,12 @@ function can_holder_depth () =
 function can_holder_cleat_bottom () =
     can_holder_height() - 2 * frenchfinity_1_0_slot_distance_top;
 
-// The sharp solid (no bore). Built `fil` undersize on the faces that grow under
-// the minkowski rounding below, so the rounded result lands on nominal sizes:
-//   width  cd+2p   (footprint built w-2*fil)
-//   front wall p   (front plane pulled in by fil)
-// The vertical back / flat base are left as-is (the +fil there is harmless: the
-// cleat overlaps the back, the base just gains a hair of height).
-module can_holder_solid () {
+// The sharp convex solid (no bore), shrunk uniformly by `inset` on the FRONT, TOP,
+// SIDE and BACK faces and lifted off the base by `inset`. With inset = 0 it is the
+// nominal block; with inset = fillet it is the body a sphere-minkowski of radius
+// fillet grows back to nominal while rounding every convex edge. (It is a convex
+// polytope, so the minkowski is cheap.)
+module can_holder_solid (inset = 0) {
     w     = can_holder_outer_width();
     a     = can_holder_angle;
     r     = can_holder_bore_d() / 2;
@@ -101,30 +106,30 @@ module can_holder_solid () {
     ci    = can_holder_can_inset;
     H     = can_holder_height();
     D     = can_holder_depth();
-    fil   = can_holder_fillet;
     big   = 2000;
 
     yc0   = can_holder_bore_yc();                 // bore floor centre Y
     Cf    = [w / 2, yc0, base];                   // bore floor centre point
-    L     = ci + rim;                             // axial floor -> top plane
+    L     = ci + rim;                             // axial floor -> roof plane
 
     intersection () {
-        // (1) footprint prism (sharp; minkowski rounds the vertical edges). Built
-        // fil narrower in X so the rounded part is exactly w wide.
-        translate([fil, fil, 0])
-            linear_extrude(H)
-                square([w - 2 * fil, D]);
+        // (1) footprint prism: inset in X (both sides), inset off the back (Y) and
+        // off the base (z); the flat cap sits at H - inset so the minkowski lifts it
+        // back to H.
+        translate([inset, inset, inset])
+            linear_extrude(H - 2 * inset)
+                square([w - 2 * inset, D]);
 
-        // (2) keep BEHIND the front plane (parallel to the bore axis). Plane
-        // normal (0,cos a,-sin a) -> face leans OUT (+Y) going up. Offset pulled
-        // in by fil so the rounded front wall is exactly p.
-        translate(Cf + (r + can_holder_padding - fil) * [0, cos(a), -sin(a)])
+        // (2) keep BEHIND the front plane (parallel to the bore axis, leans +Y up),
+        // pulled in by inset.
+        translate(Cf + (r + can_holder_padding - inset) * [0, cos(a), -sin(a)])
             rotate([-a, 0, 0])
                 translate([-big / 2, -big, -big / 2])
                     cube(big);
 
-        // (3) keep BELOW the top plane (perpendicular to the bore axis at axial L).
-        translate(Cf + L * [0, sin(a), cos(a)])
+        // (3) keep BELOW the roof plane (perpendicular to the bore axis at axial L),
+        // pulled in by inset along the axis.
+        translate(Cf + (L - inset) * [0, sin(a), cos(a)])
             rotate([-a, 0, 0])
                 translate([-big / 2, -big / 2, -big])
                     cube(big);
@@ -140,21 +145,36 @@ module can_holder_body () {
     ci    = can_holder_can_inset;
     fil   = can_holder_fillet;
     cs    = can_holder_leadin;
+    big   = 2000;
 
     yc0   = can_holder_bore_yc();
     Cf    = [w / 2, yc0, base];
     L     = ci + rim;
 
+    // The back / cleat side must stay SHARP or the french-cleat joint seats wrong;
+    // 1.0 only rounds the FRONT and TOP. So: sphere-minkowski the whole solid (rounds
+    // every edge), flatten the base, then UNION a nominal SHARP slab over the back
+    // wall region (Y <= kb) to restore the crisp back vertical edges + back-top edge.
+    kb = can_holder_back_wall() + fil + 1;
+
     difference () {
-        // round the vertical edges (the 1.0 fillets) with a vertical-cylinder
-        // minkowski: rounds the 4 upright corners, keeps the base flat & printable.
-        minkowski () {
-            can_holder_solid();
-            cylinder(r = fil, h = 0.01, $fn = 24);
+        union () {
+            // front + top + front-vertical edges rounded; base cut flat & printable.
+            intersection () {
+                minkowski () {
+                    can_holder_solid(fil);
+                    sphere(r = fil, $fn = 16);
+                }
+                translate([-big / 2, -big / 2, 0]) cube(big);     // z >= 0
+            }
+            // sharp back wall slab (joint side): nominal solid, kept for Y <= kb.
+            intersection () {
+                can_holder_solid(0);
+                translate([-big / 2, kb - big, 0]) cube(big);     // Y <= kb, z >= 0
+            }
         }
 
-        // bore drilled along the tilted axis (leans +Y going up), with a 45 deg
-        // lead-in at the mouth.
+        // bore drilled along the tilted axis (leans +Y going up), 45 deg lead-in.
         translate(Cf)
             rotate([-a, 0, 0]) {
                 cylinder(h = L + 2, r = r, $fn = 96);
