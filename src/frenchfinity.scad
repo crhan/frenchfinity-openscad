@@ -193,9 +193,11 @@ frenchfinity_1_0_slot_inner_width      = 4.5;
 frenchfinity_1_0_slot_outer_width      = 6.6;
 frenchfinity_1_0_slot_outer_height     = 6.5;
 frenchfinity_1_0_slot_distance_top     = 7.394;
-// Fit clearance between a male tongue and a female groove. The tongue is shrunk
-// by this much so the printed parts actually slide together. 0.25 matches the
-// Frenchfinity 1.0 fit; raise it for a looser fit, lower it for a tighter one.
+// Per-side fit clearance between the male tongue and the female groove. Every
+// free face of the printed tongue is pulled back this far from the nominal wall,
+// so the total gap across a pair of opposing faces is 2x this (0.25 -> 0.5 mm
+// total). Only the tongue is shrunk; the groove keeps nominal size. Raise for a
+// looser fit, lower for a tighter one.
 frenchfinity_1_0_slot_tolerance        = 0.25;
 
 /* [Miscellaneous] */

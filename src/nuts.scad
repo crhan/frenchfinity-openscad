@@ -24,25 +24,30 @@ module frenchfinity_1_0_nut(width, include_filament_hole) {
     }
 
     module basic_nut () {
-        // Outer block (mouth side). The body-side face stays at Y = 0 (it is
-        // buried in the holder body), the two Z faces are inset by tolerance/2.
-        translate([0, 0, tolerance / 2])
+        // `tolerance` is the PER-SIDE clearance: every free face of the male
+        // tongue is pulled back this far from the nominal (female) wall, so the
+        // total gap across a pair of opposing faces is 2*tolerance.
+        // Outer block (neck). The body-side face stays at Y = 0 (it is buried in
+        // the holder body); both Z faces are inset by the full clearance each.
+        translate([0, 0, tolerance])
         cube([
             width,
             outer_width,
-            outer_height - tolerance,
+            outer_height - 2 * tolerance,
         ]);
-        // Inner block (the locking head). Inset on its far Y face and both Z
-        // faces, kept centred in Z, so it clears the groove all the way round.
+        // Inner block (the locking head). Both Z faces and the far Y face (tip)
+        // are inset by the full clearance each, kept centred in Z; the near Y
+        // face stays flush with the neck (structural — the head must stay
+        // connected to the neck) so it gets no clearance.
         translate([
             0,
             outer_width,
-            ((outer_height - inner_height) / 2) + (tolerance / 2)
+            ((outer_height - inner_height) / 2) + tolerance
         ])
         cube([
             width,
             inner_width - tolerance,
-            inner_height - tolerance,
+            inner_height - 2 * tolerance,
         ]);
     }
 

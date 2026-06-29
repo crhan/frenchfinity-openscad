@@ -39,10 +39,12 @@ ASCII STL 要先 `openscad -o x.stl --export-format binstl` 转二进制才能�
 
 - 公舌（holder：`nut(w, false)` union）和母槽（wall/plate：`nut(w, true)` difference）
   **绝不能用同样的尺寸**——FDM 打印公件偏大、母件孔偏小，0 间隙 = 过盈卡死。
-- 由 `frenchfinity_1_0_slot_tolerance`（默认 0.25，对齐 1.0）控制：**只缩公舌**
-  （`include_filament_hole == false` 那支），母槽保持名义值不变。这样既有 0.25mm 间隙、
-  又与 1.0 实物互换。逻辑在 `src/nuts.scad`。
-- 改 `nuts.scad` 的卯榫几何后，确认公/母仍差 0.25mm（母槽腔深 4.5、公舌头深 4.25）。
+- 由 `frenchfinity_1_0_slot_tolerance`（默认 0.25）控制：这是**单边间隙**——公舌每个自由面
+  都从名义（母槽）壁缩进这么多，所以一对相对面的**总间隙 = 2×该值**（0.25 → 总 0.5mm）。
+  **只缩公舌**（`include_filament_hole == false` 那支），母槽保持名义值不变。逻辑在 `src/nuts.scad`。
+- 改 `nuts.scad` 的卯榫几何后，确认**单边间隙 = tolerance**：颈/头 Z 高各缩 `2×tolerance`
+  （上下每面留 tolerance），舌尖 Y 缩 `tolerance`（母槽腔深 4.5、公舌头深 4.25 不变）。
+  比 1.0 更松（1.0 ≈ 0.125/面）；仍能与 1.0 母槽/公舌互换（只是间隙更大）。
 - **`frenchfinity_1_0_slot_outer_width`（颈深）= 6.6，别再改回 5.6**（2026-06-29）。实测 1.0
   公舌总突出 10.9mm = 颈 6.6 + 头 4.5 − 0.25 公差；旧值 5.6 让**每个件**的卯榫舌都比 1.0 短
   ~1mm（与 1.0 实物互换性差）。作者原注释就写了「set to 6.6 or 6.5 ... compatible to legacy」。
