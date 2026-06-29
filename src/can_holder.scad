@@ -114,16 +114,25 @@ function can_holder_floor_z () =
     can_holder_base() + can_holder_bore_d() / 2 * sin(can_holder_angle);
 
 // bore floor centre Y: a perpendicular front-wall thickness `p` in front of the bore,
-// i.e. (r + p) perpendicular behind the front plane, at the floor height.
+// i.e. (r + p) perpendicular behind the front plane, at the floor height. Measured
+// against the 1.0 STLs the bore sits ~0.37 mm further back than (r+p) alone gives
+// (consistent across samples), so nudge it back to land on the 1.0 bore axis.
 function can_holder_bore_yc () =
     can_holder_front_y(can_holder_floor_z())
-    - (can_holder_bore_d() / 2 + can_holder_padding) / cos(can_holder_angle);
+    - (can_holder_bore_d() / 2 + can_holder_padding) / cos(can_holder_angle)
+    - 0.37;
 
 // generous Y depth for the footprint trimming prism (front plane cuts within it).
 function can_holder_depth () = can_holder_front_max() + can_holder_padding + 10;
 
-// bottom Z of the cleat block (the nut sits at up(H - 2*slot_distance_top)); the
-// labels go below this on the back face.
+// Z placement origin of the cleat (nut). The nut centres slot_outer_height/2
+// above its origin; the 1.0 part puts the cleat CENTRE a measured ~10.19 mm below
+// the part top (constant across ci / all samples), so anchor the origin there.
+function can_holder_cleat_origin () =
+    can_holder_height() - 10.19 - frenchfinity_1_0_slot_outer_height / 2;
+
+// bottom Z of the label band on the back face: kept below the cleat (unchanged so
+// the engraved text is unaffected by the cleat-position fix).
 function can_holder_cleat_bottom () =
     can_holder_height() - 2 * frenchfinity_1_0_slot_distance_top;
 
@@ -227,12 +236,11 @@ module can_holder_body () {
 
 module can_holder_with_nut () {
     w = can_holder_outer_width();
-    H = can_holder_height();
 
     union () {
         can_holder_body();
         // cleat on the vertical back face (Y = 0), tongue out -Y, near the top.
-        up(H - (frenchfinity_1_0_slot_distance_top * 2))
+        up(can_holder_cleat_origin())
             mirror([0, 1, 0])
                 nut(w, false);
     }
