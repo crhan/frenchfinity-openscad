@@ -8,6 +8,10 @@
 !frenchfinity-logo.png
 /generated_stl/
 
+# Local copy of the Frenchfinity 1.0 reference models (mirrored from the NAS).
+# Reference data for reverse engineering / STL comparison - never commit.
+/FrenchFinity/
+
 # OS / tooling junk
 .DS_Store
 __pycache__/
