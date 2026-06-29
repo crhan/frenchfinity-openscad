@@ -230,7 +230,7 @@ def ch_bounds(p):
     r = (cd + 2) / 2
     a = 10
     h = (9 + 0.3 * pl) + ci * math.cos(math.radians(a)) + r * math.sin(math.radians(a)) + 6
-    # front face X-read: check Z in [0, h] and X in [0, w]
+    # back face X-read (below the cleat): check Z in [0, h] and X in [0, w]
     return [(2, 0.0, h), (0, 0.0, w)]
 
 

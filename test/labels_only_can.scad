@@ -18,6 +18,9 @@ can_holder_padding_left = 16;
 can_holder_angle        = 10;
 can_holder_bottom       = "closed";
 
+// the cleat sits at up(H - 2*slot_distance_top); labels go below it on the back.
+frenchfinity_1_0_slot_distance_top = 7.394;
+
 include <../src/labels.scad>
 include <../src/can_holder.scad>
 

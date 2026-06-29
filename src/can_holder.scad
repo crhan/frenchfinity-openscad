@@ -81,16 +81,10 @@ function can_holder_depth () =
     + can_holder_bore_d() / 2
     + can_holder_padding + 6;
 
-// front face Y at height z, for placing labels flush on the leaning front face.
-// Front face is parallel to the bore axis, through the front-bottom edge.
-function can_holder_front_y (z) =
-    let (a   = can_holder_angle,
-         r   = can_holder_bore_d() / 2,
-         yc0 = can_holder_bore_yc(),
-         // a point on the front plane at the floor (perp offset r+p from axis):
-         p0y = yc0 + (r + can_holder_padding) * cos(a),
-         p0z = can_holder_base() - (r + can_holder_padding) * sin(a))
-    p0y + (z - p0z) * tan(a);
+// bottom Z of the cleat block (the nut sits at up(H - 2*slot_distance_top)); the
+// labels go below this on the back face.
+function can_holder_cleat_bottom () =
+    can_holder_height() - 2 * frenchfinity_1_0_slot_distance_top;
 
 // The sharp solid (no bore). Built `fil` undersize on the faces that grow under
 // the minkowski rounding below, so the rounded result lands on nominal sizes:
@@ -188,37 +182,8 @@ module can_holder_with_nut () {
     }
 }
 
-// label lines stacked on the slanted FRONT face, each line placed at the front
-// surface's Y for its own height so it engraves flush despite the slant. Sizing
-// + centring reuse the shared labels.scad helpers (floor + fit guarantees).
-module can_holder_front_labels (lines, z0, z1) {
-    n = len(lines);
-    if (render_text && n > 0) {
-        w      = can_holder_outer_width();
-        a      = can_holder_angle;
-        rheight = z1 - z0;
-        rwidth  = w;
-        mc     = max([for (s = lines) len(s)]);
-        size   = labelSize(n, mc, rheight, rwidth);
-        if (size > 0.3 && rheight > 2 * TEXT_MARGIN) {
-            pitch = size * TEXT_LINE_K;
-            zt    = labelZTop(n, size, rheight, z0);
-            // tilt onto the slanted front face (xrot 90-a) and flip for the +Y
-            // outward face (yrot 180), the same way labelFace handles a +Y face.
-            for (i = [0 : n - 1])
-                let (z = zt - i * pitch)
-                    translate([w / 2, can_holder_front_y(z), z])
-                        rotate([90 - a, 0, 0])
-                            rotate([0, 180, 0])
-                                text3d(lines[i], size = size, height = text_depth,
-                                       anchor = CENTER);
-        }
-    }
-}
-
 module can_holder_labels_only () {
-    w = can_holder_outer_width();
-    H = can_holder_height();
+    w    = can_holder_outer_width();
     base = can_holder_base();
 
     lines = [
@@ -229,20 +194,12 @@ module can_holder_labels_only () {
         str("p",  can_holder_padding)
     ];
 
-    // primary front region (below the opening); spill onto the back face lower
-    // region for parts too small to hold every line at the floor size.
-    z0 = base + 2;
-    z1 = base + can_holder_can_inset * cos(can_holder_angle) - 2;
-    cap = labelCapacity(z1 - z0);
-    n   = len(lines);
-    if (n <= cap)
-        can_holder_front_labels(lines, z0, z1);
-    else {
-        n1 = ceil(n / 2);
-        can_holder_front_labels([for (i = [0 : n1 - 1]) lines[i]], z0, z1);
-        labelFace([for (i = [n1 : n - 1]) lines[i]],
-                  ["x", w / 2, 0, w, base + 2, z1]);
-    }
+    // The 1.0 part engraves the parameter labels on the VERTICAL BACK face (the
+    // cleat / wall side), below the cleat block -- NOT on the slanted front. Match
+    // that: one X-reading face at Y = 0, in the z gap between the base and the
+    // cleat. labelFace floors the glyph at text_size_min and centres the block.
+    labelFace(lines,
+              ["x", w / 2, 0, w, base + 2, can_holder_cleat_bottom() - 2]);
 }
 
 module can_holder_with_nut_and_text () {
