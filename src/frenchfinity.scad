@@ -187,8 +187,10 @@ grid_inner_wall_thickness = 2;
 /* [Frenchfinity 1.0 slot] */
 frenchfinity_1_0_slot_inner_height     = 8.5;
 frenchfinity_1_0_slot_inner_width      = 4.5;
-// You may have to set this to 6.6 or 6.5 to generate wall anchors compatible to legacy frenchfinity parts
-frenchfinity_1_0_slot_outer_width      = 5.6;
+// 6.6 = the legacy Frenchfinity 1.0 neck depth (measured: 1.0 male tongue protrudes
+// 10.9mm = 6.6+4.5-tolerance; female groove 11.1mm). The old 5.6 default made every
+// cleat ~1mm too short / incompatible with 1.0 parts. Keep at 6.6 to match 1.0.
+frenchfinity_1_0_slot_outer_width      = 6.6;
 frenchfinity_1_0_slot_outer_height     = 6.5;
 frenchfinity_1_0_slot_distance_top     = 7.394;
 // Fit clearance between a male tongue and a female groove. The tongue is shrunk

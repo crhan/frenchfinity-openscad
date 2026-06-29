@@ -43,6 +43,11 @@ ASCII STL 要先 `openscad -o x.stl --export-format binstl` 转二进制才能�
   （`include_filament_hole == false` 那支），母槽保持名义值不变。这样既有 0.25mm 间隙、
   又与 1.0 实物互换。逻辑在 `src/nuts.scad`。
 - 改 `nuts.scad` 的卯榫几何后，确认公/母仍差 0.25mm（母槽腔深 4.5、公舌头深 4.25）。
+- **`frenchfinity_1_0_slot_outer_width`（颈深）= 6.6，别再改回 5.6**（2026-06-29）。实测 1.0
+  公舌总突出 10.9mm = 颈 6.6 + 头 4.5 − 0.25 公差；旧值 5.6 让**每个件**的卯榫舌都比 1.0 短
+  ~1mm（与 1.0 实物互换性差）。作者原注释就写了「set to 6.6 or 6.5 ... compatible to legacy」。
+  这是**全仓库共用件**，改它影响全部 feature 的 cleat（dy 各 +1mm，向 1.0 靠）——改完务必
+  `python3 test/test_labels_fit.py` + 编译全 18 feature 复验。
 
 ## 文字刻印 —— 改动后必须跑回归测试
 

@@ -83,14 +83,26 @@ function can_holder_base () = 9 + 0.3 * can_holder_padding_left;
 function can_holder_height () =
     can_holder_can_inset * cos(can_holder_angle) + can_holder_K();
 
-// furthest-forward point of the front face, measured from the back face (Y=0):
-// front_max = pl + C(cd,p,a). The front-top corner is where the front meets the roof.
-function can_holder_front_max () = can_holder_padding_left + can_holder_C();
+// The front+top sphere-minkowski rounding pulls the rendered max-Y point IN from
+// the sharp front-top corner by this much (measured: grows smoothly with the angle,
+// independent of cd/p, scales with the fillet). We build the sharp corner this much
+// FURTHER out so the rounded result lands exactly on the 1.0 front (pl + C).
+function can_holder_front_pullin () =
+    let (a = can_holder_angle)
+    (can_holder_fillet / 2) * (0.04 * a - 0.00047 * a * a);
 
-// Z of the front-top corner: the roof (tilt a) drops C*tan(a) from the deck (z=H,
-// Y=pl) to the front-top (Y = pl + C).
+// effective sharp front extent = the 1.0 front (pl + C) plus the rounding pull-in.
+function can_holder_front_eff () = can_holder_C() + can_holder_front_pullin();
+
+// furthest-forward point of the front face, measured from the back face (Y=0):
+// the rendered (rounded) value lands on pl + C (= the 1.0 front face).
+function can_holder_front_max () =
+    can_holder_padding_left + can_holder_front_eff();
+
+// Z of the front-top corner: the roof (tilt a) drops front_eff*tan(a) from the deck
+// (z=H, Y=pl) to the front-top corner.
 function can_holder_fronttop_z () =
-    can_holder_height() - can_holder_C() * tan(can_holder_angle);
+    can_holder_height() - can_holder_front_eff() * tan(can_holder_angle);
 
 // front face Y at height z (the face is parallel to the bore axis, tilts `a`).
 function can_holder_front_y (z) =
