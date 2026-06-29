@@ -41,8 +41,7 @@
 // leans toward +Y (front) going up; the cleat sits on the vertical back face.
 //
 
-can_holder_clearance = 2;     // bore = can_diameter + this (fit slack)
-can_holder_rim       = 4;     // solid lip (along the bore axis) above the opening
+can_holder_clearance = 2;     // bore = can_diameter + this (fit slack; measured cd+2)
 can_holder_leadin    = 3;     // 45 deg lead-in chamfer at the bore mouth
 can_holder_fillet    = 2;     // rounding radius on the FRONT + TOP edges (1.0 rounds
                               // these); the BACK / cleat edges stay sharp (joint fit)
@@ -57,23 +56,24 @@ function can_holder_bore_d () =
 // solid base height below the bore floor (measured: ~9 + 0.3*pl)
 function can_holder_base () = 9 + 0.3 * can_holder_padding_left;
 
-// Vertical height of the flat top deck. Set so the deck's front edge lands exactly
-// at the BACK rim of the bore opening: the bore opens cleanly in the sloped roof and
-// the flat deck fills the area behind it (matching 1.0). If the deck were any deeper
-// it would cut into the opening and leave an incomplete rim. Geometry: the opening's
-// back rim point sits at z = base + L*cos(a) + (r+leadin)*sin(a) on the perpendicular
-// roof, where L = ci + rim is the axial floor->roof distance.
+// Vertical height of the flat top deck. Derived from the 1.0 STLs: the roof is
+// perpendicular to the bore axis at axial L = ci (the bore opening sits flush in the
+// roof), and the flat deck behind the opening is exactly `pl` deep. Capping the cap
+// height at the roof's height at Y = pl makes the deck come out to pl by construction
+// AND reproduces the measured part height (cd23/pl18/ci55/a20 -> 73.98 vs 73.9).
+//   H = base + ci*cos(a) + (yc0 + ci*sin(a) - pl) * tan(a)
 function can_holder_height () =
-    let (a = can_holder_angle,
-         r = can_holder_bore_d() / 2,
-         L = can_holder_can_inset + can_holder_rim)
+    let (a   = can_holder_angle,
+         ci  = can_holder_can_inset,
+         yc0 = can_holder_bore_yc(),
+         pl  = can_holder_padding_left)
     can_holder_base()
-    + L * cos(a)
-    + (r + can_holder_leadin) * sin(a);
+    + ci * cos(a)
+    + (yc0 + ci * sin(a) - pl) * tan(a);
 
 // Back wall thickness at the bore floor (the bore sits this far in front of the
-// vertical back face). Small at the floor; the lean adds material higher up.
-function can_holder_back_wall () = 3 + 0.12 * can_holder_padding_left;
+// vertical back face). Measured from the 1.0 STLs: 3 + 0.3*pl (e.g. pl18 -> 8.4mm).
+function can_holder_back_wall () = 3 + 0.3 * can_holder_padding_left;
 
 // bore floor centre Y (back wall + bore radius)
 function can_holder_bore_yc () =
@@ -102,7 +102,6 @@ module can_holder_solid (inset = 0) {
     a     = can_holder_angle;
     r     = can_holder_bore_d() / 2;
     base  = can_holder_base();
-    rim   = can_holder_rim;
     ci    = can_holder_can_inset;
     H     = can_holder_height();
     D     = can_holder_depth();
@@ -110,7 +109,7 @@ module can_holder_solid (inset = 0) {
 
     yc0   = can_holder_bore_yc();                 // bore floor centre Y
     Cf    = [w / 2, yc0, base];                   // bore floor centre point
-    L     = ci + rim;                             // axial floor -> roof plane
+    L     = ci;                                   // axial floor -> roof (opening flush)
 
     intersection () {
         // (1) footprint prism: inset in X (both sides), inset off the back (Y) and
@@ -141,7 +140,6 @@ module can_holder_body () {
     a     = can_holder_angle;
     r     = can_holder_bore_d() / 2;
     base  = can_holder_base();
-    rim   = can_holder_rim;
     ci    = can_holder_can_inset;
     fil   = can_holder_fillet;
     cs    = can_holder_leadin;
@@ -149,7 +147,7 @@ module can_holder_body () {
 
     yc0   = can_holder_bore_yc();
     Cf    = [w / 2, yc0, base];
-    L     = ci + rim;
+    L     = ci;
 
     // The back / cleat side must stay SHARP or the french-cleat joint seats wrong;
     // 1.0 only rounds the FRONT and TOP. So: sphere-minkowski the whole solid (rounds
