@@ -53,39 +53,62 @@ function can_holder_outer_width () =
 function can_holder_bore_d () =
     can_holder_can_diameter + can_holder_clearance;
 
-// solid base height below the bore floor (measured: ~9 + 0.3*pl)
+// --- Empirical dimension laws, fitted to ALL 50+ 1.0 Can-Holder STLs ----------
+// The 1.0 part is a free-parameter family in (cd, pl, ci, p, angle); the angle is
+// NOT in the file names but is one of 10/15/20/30/40 deg. Measuring every sample
+// gives these laws (max residual < 0.5 mm across the whole set). They are imitation
+// fits, not first-principles - the 1.0 top geometry over-constrains a clean model,
+// so we reproduce the measured bounding box + deck directly.
+//   dx   = cd + 2p                                   (exact)
+//   deck = pl                                         (flat top depth)
+//   bore = cd + 2                                     (clearance 2)
+//   dy   = 10.9(cleat) + pl + C ;  dz = ci*cos(a) + K
+function can_holder_C () =
+    let (cd = can_holder_can_diameter, p = can_holder_padding,
+         t  = tan(can_holder_angle))
+    1.0122 * cd + 1.8276 * p
+    - 0.1120 * cd * t - 0.2464 * cd * t * t
+    - 9.0947 * t + 6.3539;
+
+function can_holder_K () =
+    let (cd = can_holder_can_diameter, p = can_holder_padding,
+         r  = can_holder_bore_d() / 2, a = can_holder_angle)
+    2.2371 * r * sin(a) + 18.3335 * sin(a)
+    - 0.1059 * cd * tan(a) + 1.5820 * p - 5.3775;
+
+// solid base height below the lowest bore point (measured: ~9 + 0.3*pl)
 function can_holder_base () = 9 + 0.3 * can_holder_padding_left;
 
-// Vertical height of the flat top deck. Derived from the 1.0 STLs: the roof is
-// perpendicular to the bore axis at axial L = ci (the bore opening sits flush in the
-// roof), and the flat deck behind the opening is exactly `pl` deep. Capping the cap
-// height at the roof's height at Y = pl makes the deck come out to pl by construction
-// AND reproduces the measured part height (cd23/pl18/ci55/a20 -> 73.98 vs 73.9).
-//   H = base + ci*cos(a) + (yc0 + ci*sin(a) - pl) * tan(a)
+// total part height dz = ci*cos(a) + K(cd,p,a)  (matches the 1.0 STL height)
 function can_holder_height () =
-    let (a   = can_holder_angle,
-         ci  = can_holder_can_inset,
-         yc0 = can_holder_bore_yc(),
-         pl  = can_holder_padding_left)
-    can_holder_base()
-    + ci * cos(a)
-    + (yc0 + ci * sin(a) - pl) * tan(a);
+    can_holder_can_inset * cos(can_holder_angle) + can_holder_K();
 
-// Back wall thickness at the bore floor (the bore sits this far in front of the
-// vertical back face). Measured from the 1.0 STLs: 3 + 0.3*pl (e.g. pl18 -> 8.4mm).
-function can_holder_back_wall () = 3 + 0.3 * can_holder_padding_left;
+// furthest-forward point of the front face, measured from the back face (Y=0):
+// front_max = pl + C(cd,p,a). The front-top corner is where the front meets the roof.
+function can_holder_front_max () = can_holder_padding_left + can_holder_C();
 
-// bore floor centre Y (back wall + bore radius)
+// Z of the front-top corner: the roof (tilt a) drops C*tan(a) from the deck (z=H,
+// Y=pl) to the front-top (Y = pl + C).
+function can_holder_fronttop_z () =
+    can_holder_height() - can_holder_C() * tan(can_holder_angle);
+
+// front face Y at height z (the face is parallel to the bore axis, tilts `a`).
+function can_holder_front_y (z) =
+    can_holder_front_max()
+    - (can_holder_fronttop_z() - z) * tan(can_holder_angle);
+
+// bore floor centre Z: base solid + r*sin(a) so the lowest bore point sits at `base`.
+function can_holder_floor_z () =
+    can_holder_base() + can_holder_bore_d() / 2 * sin(can_holder_angle);
+
+// bore floor centre Y: a perpendicular front-wall thickness `p` in front of the bore,
+// i.e. (r + p) perpendicular behind the front plane, at the floor height.
 function can_holder_bore_yc () =
-    can_holder_back_wall() + can_holder_bore_d() / 2;
+    can_holder_front_y(can_holder_floor_z())
+    - (can_holder_bore_d() / 2 + can_holder_padding) / cos(can_holder_angle);
 
-// total Y footprint (front-top reaches the furthest): back wall + bore lean + bore
-// + front wall, generously rounded up for the trimming prism.
-function can_holder_depth () =
-    can_holder_bore_yc()
-    + can_holder_can_inset * sin(can_holder_angle)
-    + can_holder_bore_d() / 2
-    + can_holder_padding + 6;
+// generous Y depth for the footprint trimming prism (front plane cuts within it).
+function can_holder_depth () = can_holder_front_max() + can_holder_padding + 10;
 
 // bottom Z of the cleat block (the nut sits at up(H - 2*slot_distance_top)); the
 // labels go below this on the back face.
@@ -100,35 +123,34 @@ function can_holder_cleat_bottom () =
 module can_holder_solid (inset = 0) {
     w     = can_holder_outer_width();
     a     = can_holder_angle;
-    r     = can_holder_bore_d() / 2;
-    base  = can_holder_base();
-    ci    = can_holder_can_inset;
     H     = can_holder_height();
     D     = can_holder_depth();
+    pl    = can_holder_padding_left;
     big   = 2000;
 
-    yc0   = can_holder_bore_yc();                 // bore floor centre Y
-    Cf    = [w / 2, yc0, base];                   // bore floor centre point
-    L     = ci;                                   // axial floor -> roof (opening flush)
+    // front-top corner (front plane ∩ roof plane) and deck edge (roof ∩ flat cap):
+    P_front = [w / 2, can_holder_front_max(), can_holder_fronttop_z()];  // front-top
+    P_roof  = [w / 2, pl, H];                                            // deck edge
 
     intersection () {
-        // (1) footprint prism: inset in X (both sides), inset off the back (Y) and
-        // off the base (z); the flat cap sits at H - inset so the minkowski lifts it
-        // back to H.
+        // (1) footprint prism, capped flat at H (the deck). Inset in X (both sides),
+        // off the back (Y) and off the base (z); cap at H - inset so the minkowski
+        // lifts everything back to nominal.
         translate([inset, inset, inset])
             linear_extrude(H - 2 * inset)
                 square([w - 2 * inset, D]);
 
-        // (2) keep BEHIND the front plane (parallel to the bore axis, leans +Y up),
-        // pulled in by inset.
-        translate(Cf + (r + can_holder_padding - inset) * [0, cos(a), -sin(a)])
+        // (2) keep BEHIND the front plane (∥ bore axis through the front-top corner,
+        // leans +Y going up), pulled in `inset` along its normal (0,cos a,-sin a).
+        translate(P_front - inset * [0, cos(a), -sin(a)])
             rotate([-a, 0, 0])
                 translate([-big / 2, -big, -big / 2])
                     cube(big);
 
-        // (3) keep BELOW the roof plane (perpendicular to the bore axis at axial L),
-        // pulled in by inset along the axis.
-        translate(Cf + (L - inset) * [0, sin(a), cos(a)])
+        // (3) keep BELOW the roof plane (⊥ bore axis through the deck edge (pl,H)),
+        // pulled in `inset` along its normal (0,sin a,cos a). Where the roof rises
+        // above the flat cap (Y < pl) the cap wins -> flat deck `pl` deep.
+        translate(P_roof - inset * [0, sin(a), cos(a)])
             rotate([-a, 0, 0])
                 translate([-big / 2, -big / 2, -big])
                     cube(big);
@@ -140,20 +162,23 @@ module can_holder_body () {
     a     = can_holder_angle;
     r     = can_holder_bore_d() / 2;
     base  = can_holder_base();
-    ci    = can_holder_can_inset;
     fil   = can_holder_fillet;
     cs    = can_holder_leadin;
     big   = 2000;
 
     yc0   = can_holder_bore_yc();
-    Cf    = [w / 2, yc0, base];
-    L     = ci;
+    zf    = can_holder_floor_z();
+    Cf    = [w / 2, yc0, zf];                  // bore floor centre
+    H     = can_holder_height();
+    // axial floor -> roof opening = perpendicular distance from Cf to the roof plane
+    // (roof through (pl,H), normal = bore axis), so the bore exits flush at the roof.
+    L     = sin(a) * (can_holder_padding_left - yc0) + cos(a) * (H - zf);
 
     // The back / cleat side must stay SHARP or the french-cleat joint seats wrong;
     // 1.0 only rounds the FRONT and TOP. So: sphere-minkowski the whole solid (rounds
     // every edge), flatten the base, then UNION a nominal SHARP slab over the back
     // wall region (Y <= kb) to restore the crisp back vertical edges + back-top edge.
-    kb = can_holder_back_wall() + fil + 1;
+    kb = yc0 - r + fil + 1;
 
     difference () {
         union () {
@@ -180,10 +205,11 @@ module can_holder_body () {
                     cylinder(h = cs + 2, r1 = r, r2 = r + cs, $fn = 96);
             }
 
-        // drain / push-out hole through the base (1.0 "-hole-bottom" variant)
+        // drain / push-out hole through the base up into the bore floor
+        // (1.0 "-hole-bottom" variant)
         if (can_holder_bottom == "open")
             translate([w / 2, yc0, -1])
-                cylinder(d = can_holder_drain, h = base + 4, $fn = 64);
+                cylinder(d = can_holder_drain, h = zf + 4, $fn = 64);
     }
 }
 
