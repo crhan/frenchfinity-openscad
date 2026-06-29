@@ -4,7 +4,11 @@
 
 - **移植下一个 1.0 模型**：照 `docs/porting-playbook.md` 走（含待移植清单与命令）。
 - **逆向工具**：`tools/f3d_inspect.py`（从 .f3d 抽参数/预览）、
-  `tools/stl_analyze.py`（bbox 回归 / 截面 / 平面特征，**只读二进制 STL**）。
+  `tools/stl_analyze.py`（bbox 回归 / 截面 / 平面特征，**只读二进制 STL**）、
+  `tools/stl_diff.py`（**我方 STL vs 1.0 STL 形状对比**：自动对齐[48 朝向+ICP]、
+  报表面 Chamfer/Hausdorff 距离 + 体积比 + 定位差异区 + 渲染红蓝差异图。
+  用法 `tools/stl_diff.py OURS.stl REF.stl [OUT_DIR]`。**这是判「像不像」的首选**，
+  别再只靠 bbox 或手调 translate 对齐）。
 - 第一个完整范例：`docs/reverse-engineering-rectangular-tool-holder.md`。
 - 1.0 源文件在 `/Volumes/home/Drive/3D模型/FrenchFinity/`。
   **目录名可能是简洁版**（`Bit-Holder`、`Tape-Holder`、`Can-Holder`…）而非旧的
@@ -18,6 +22,9 @@ bbox 一致、形状完全错的废件（can 曾是横躺圆柱、tape 没转轴
 ASCII STL 要先 `openscad -o x.stl --export-format binstl` 转二进制才能喂
 `stl_analyze`），**亲眼看几何 + 切截面**定结构，再让 bbox 自然涌现。也别信子 agent 的
 "functional_equivalent" 判定（曾把没转轴的 tape 判成功能等价）。
+  **量化「像不像」用 `tools/stl_diff.py`**：它自动对齐后报表面偏差(mean/p95/max)+ 定位差异区 +
+  出红蓝差异图。实测 can（bbox 仅差 0.04mm）表面偏差 mean 0.6/max 4.3mm——**bbox 全对、形状仍有
+  真实局部差**（bore 居中、cleat 的 Z 位、文字），正是这条铁律。bbox 通过 ≠ 完成。
 - 远端：`fork` = `crhan/frenchfinity-openscad`（推这里），`origin` = 上游 Bastelsaal。
   当前工作分支 `rectangular-tool-holder`。
 
