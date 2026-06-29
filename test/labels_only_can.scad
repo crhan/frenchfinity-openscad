@@ -15,6 +15,7 @@ can_holder_can_diameter = 10;
 can_holder_padding      = 10;
 can_holder_can_inset    = 55;
 can_holder_padding_left = 16;
+can_holder_angle        = 10;
 can_holder_bottom       = "closed";
 
 include <../src/labels.scad>

@@ -61,6 +61,8 @@ can_holder_padding      = 10;
 can_holder_can_inset    = 55;
 // Extra back / base material (pl)
 can_holder_padding_left = 16;
+// How far the bore / can leans out from vertical (a); 1.0 uses 10/15/20/30/40
+can_holder_angle        = 10;
 // Bottom drain / push-out hole (1.0 "-hole-bottom" variant)
 can_holder_bottom       = "closed"; //[closed, open]
 
