@@ -216,7 +216,7 @@ def make_box_from_bounds(bounds: tuple[float, float, float, float, float, float]
 
 
 def make_outer_shell(params: CanHolderParams) -> cq.Workplane:
-    """Extrude the YZ profile along X, then fillet the two rounded X-edges."""
+    """Extrude the YZ profile along X, then fillet only the 1.0 rounded edges."""
     profile = side_profile(params)
     width = outer_width(params)
     shell = cq.Workplane("YZ").polyline(profile).close().extrude(width)
@@ -227,8 +227,6 @@ def make_outer_shell(params: CanHolderParams) -> cq.Workplane:
     ]
     for point in rounded_points:
         shell = shell.edges(cq.selectors.NearestToPointSelector(point)).fillet(CAN_HOLDER_FILLET)
-    for selector in ("<X", ">X"):
-        shell = shell.edges(selector).fillet(CAN_HOLDER_FILLET)
     return shell
 
 
@@ -350,13 +348,21 @@ def cut_labels(body: cq.Workplane, params: CanHolderParams) -> cq.Workplane:
 
     z_center = (z_low + z_high) / 2.0
     line_step = size * TEXT_LINE_SPACING
-    wp = body.faces("<Y").workplane(invert=True, origin=(outer_width(params) / 2.0, 0.0, z_center))
+    # Fixed plane on the back face.  Viewed from the wall/cleat side (-Y), local
+    # X is model +X and local Y is model +Z, so the text is not mirrored or
+    # vertically inverted.  Negative distance cuts back into the body (+Y).
+    label_plane = cq.Plane(
+        origin=(outer_width(params) / 2.0, 0.0, z_center),
+        xDir=(1.0, 0.0, 0.0),
+        normal=(0.0, -1.0, 0.0),
+    )
+    wp = cq.Workplane(label_plane).add(body.val())
     for i, line in enumerate(lines):
         z_offset = ((len(lines) - 1) / 2.0 - i) * line_step
         wp = wp.center(0.0, z_offset).text(
             line,
             size,
-            TEXT_DEPTH,
+            -TEXT_DEPTH,
             combine="cut",
             font="Arial",
             halign="center",
