@@ -39,6 +39,7 @@ ANGLE_CANDIDATES = (10.0, 15.0, 20.0, 30.0, 40.0)
 CAN_HOLDER_CLEARANCE = 2.0
 CAN_HOLDER_LEADIN = 3.0
 CAN_HOLDER_FILLET = 2.0
+CAN_HOLDER_SIDE_EDGE_FILLET = 1.0
 CAN_HOLDER_DRAIN = 6.0
 CAN_HOLDER_BORE_BOTTOM_EXTRA = 4.0
 
@@ -227,6 +228,16 @@ def make_outer_shell(params: CanHolderParams) -> cq.Workplane:
     ]
     for point in rounded_points:
         shell = shell.edges(cq.selectors.NearestToPointSelector(point)).fillet(CAN_HOLDER_FILLET)
+
+    # Frenchfinity 1.0 keeps the cleat/back side sharp, but the two exposed
+    # front/side vertical-ish edges are eased.  Do not use "<X"/">X" here: that
+    # rounds the entire side perimeter, including the wall-facing back edge.
+    front_side_y = (front_y(params, 0.0) + front_max(params)) / 2.0
+    front_side_z = fronttop_z(params) / 2.0
+    for x in (0.0, width):
+        shell = shell.edges(
+            cq.selectors.NearestToPointSelector((x, front_side_y, front_side_z))
+        ).fillet(CAN_HOLDER_SIDE_EDGE_FILLET)
     return shell
 
 
