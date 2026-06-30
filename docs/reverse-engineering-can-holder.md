@@ -21,8 +21,14 @@
 >
 > 2026-06-30（v2.1 review）：按代码对比重新复查 `generated_stl/review/Can-Holder.v2.1.ours.stl`
 > vs `Can-Holder.ref.stl`。bbox 几乎完全对齐但 surface 热点仍明显；修复两处肉眼问题：
-> 左右端面 perimeter 也用 BOSL2 roundover，补上侧边外圆角；bore 平底端沿孔轴向下多切 4mm，
-> 去掉水平截面里明显的平切线；背面文字改成 1.0 的两位小数格式和固定 3.5mm 字高。
+> bore 平底端沿孔轴向下多切 4mm，去掉水平截面里明显的平切线；背面文字改成 1.0 的两位小数格式
+> 和固定 3.5mm 字高。
+>
+> 2026-06-30（v2.1 背面复核）：`rounded_prism(joint_bot/joint_top)` 不能按端面边逐项控制，
+> 全局打开会把背面文字面左右竖边也圆掉，错误。已改回 `joint_bot=joint_top=0`，只保留
+> `joint_sides=[0,0,fillet,fillet,0]` 对前顶/屋脊长边倒圆；背面文字 cutter 改成从 Y=-0.02
+> 穿入 Y=+text_depth 的显式 `linear_extrude(text())`，避免 centered `text3d()` 在背面大平面上留下
+> 共面布尔碎片。
 
 ## 这次（第二轮）查出的真实结构 vs 旧版
 
@@ -84,7 +90,7 @@ profile = [
 ]
 outer = BOSL2 rounded_prism(profile, height=width,
                             joint_sides=[0,0,fillet,fillet,0],
-                            joint_bot=fillet, joint_top=fillet)
+                            joint_bot=0, joint_top=0)
         mapped from BOSL2 Z-extrusion back to model X-extrusion
 body  = outer − bore 圆柱(沿轴, rotate([-a,0,0]), bottom_extra=4)
              − 45°导入锥 − 可选排水孔
@@ -96,9 +102,9 @@ body  = outer − bore 圆柱(沿轴, rotate([-a,0,0]), bottom_extra=4)
   **背面(cleat/贴墙侧)竖棱必须保持尖**——否则 french cleat 榫卯结合面不对。当前做法是把
   YZ 侧面轮廓作为 BOSL2 `rounded_prism()` 的 profile，`joint_sides` 按 profile 顶点逐项控制：
   `[back-bottom, front-bottom, front-top, deck-transition, back-top] = [0,0,fillet,fillet,0]`。
-  `joint_bot=joint_top=fillet` 给左右端面 perimeter 也加 roundover，补齐从水平截面能看到的
-  侧边外圆角。这比 `minkowski()+union()` 更接近 Fusion 的 B-rep 圆角：圆角和尖角在同一个
-  VNF 中生成，没有两块 CSG 拼出来的台阶/缝。
+  `joint_bot/joint_top` 必须保持 0：BOSL2 只能整体圆端面所有边，不能只圆前侧；全局打开会把
+  背面文字面左右竖边也圆掉。这比 `minkowski()+union()` 更接近 Fusion 的 B-rep 圆角：圆角和
+  尖角在同一个 VNF 中生成，没有两块 CSG 拼出来的台阶/缝。
 - **bore 底部不是球头**：试过球头会把 volume ratio 从约 0.956 拉坏到约 0.918。1.0 更像是
   同一根斜圆柱沿轴向下多切一点，让平底 cap 藏到更深处；当前 `can_holder_bore_bottom_extra=4`
   后，代码对比 p95 从约 1.42 降到约 1.28，max 从约 4.47 降到约 3.17，水平截面里的平切线消失。
@@ -108,7 +114,8 @@ body  = outer − bore 圆柱(沿轴, rotate([-a,0,0]), bottom_extra=4)
   按图形复核（自渲 PNG 对比）发现：1.0 把 `v1/cd/pl/ci/p` 五行刻在背面 Y=0 面 cleat 下方，
   **不是**斜前面；旧版刻在斜前面，一眼就不对。2026-06-30 v2.1 再修文字细节：1.0 F3D
   文本模板是 `cd{:.2f}/pl{:.2f}/ci{:.2f}/p{:.2f}`，且字高约 3.5mm；can holder 因此不走通用
-  adaptive 放大，固定 `text_size_min` 并用 `text_depth*2` 保证背面刻入深度。
+  adaptive 放大，固定 `text_size_min`。文字减材体从背面外侧轻微穿入实体，切深 `text_depth`，
+  避免 cutter 与背面平面居中共面造成破碎字形。
 
 ## 尺寸（2026-06-29 第六轮：对全部 50+ 样本拟合的经验律，残差 <0.5mm）
 
@@ -163,13 +170,14 @@ v2.1 继续用 surface diff 追踪局部圆角/文字/孔底差异；文字回�
 
 - `generated_stl/review/Can-Holder.v2.1.diff.txt`
 - `generated_stl/review/Can-Holder.v2.1.official-diff.txt`
+- `generated_stl/review/Can-Holder.v2.1.back-preview.png`
 - `generated_stl/review/Can-Holder.v2.1.x-sections.png`
 - `generated_stl/review/Can-Holder.v2.1.z-sections.png`
 
 `official-diff.txt` 来自项目首选 `tools/stl_diff.py`：bbox Δ `[+0.00,-0.01,+0.00]`，
-volume ratio `0.936`，`ours→ref` mean/p95/max =
-`0.452/0.825/2.884mm`，`ref→ours` mean/p95/max = `0.440/0.799/2.000mm`，
-symmetric Hausdorff `2.884mm`，`62.8%` surface within `0.50mm`，脚本判定 `CLOSE`。
+volume ratio `0.938`，`ours→ref` mean/p95/max =
+`0.465/0.836/2.808mm`，`ref→ours` mean/p95/max = `0.452/0.809/1.941mm`，
+symmetric Hausdorff `2.808mm`，`60.6%` surface within `0.50mm`，脚本判定 `CLOSE`。
 剩余热点集中在背面顶部文字/cleat 附近（extra，z≈63）和背面低位孔/文字附近（missing，z≈21-34）。
 
 ## 卯榫配合验证（2026-06-29，求交集实测，已通过）

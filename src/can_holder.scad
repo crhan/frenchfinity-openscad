@@ -47,6 +47,7 @@ can_holder_fillet    = 2;     // rounding radius on the FRONT + TOP edges (1.0 r
                               // these); the BACK / cleat edges stay sharp (joint fit)
 can_holder_drain     = 6;     // drain hole diameter for bottom = "open"
 can_holder_bore_bottom_extra = 4;
+can_holder_text_epsilon = 0.02;
 
 function can_holder_label_value (v) = format_fixed(v, 2);
 
@@ -169,8 +170,8 @@ module can_holder_outer_shell () {
                 bottom       = can_holder_side_profile(),
                 height       = w,
                 joint_sides  = [0, 0, f, f, 0],
-                joint_bot    = f,
-                joint_top    = f,
+                joint_bot    = 0,
+                joint_top    = 0,
                 k_sides      = 0.92,
                 splinesteps  = 16
             );
@@ -230,6 +231,7 @@ module can_holder_labels_only () {
     base = can_holder_base();
     z0   = base + 2;
     z1   = can_holder_cleat_bottom() - 2;
+    d    = text_depth;
 
     lines = [
         final_version_prefix_calculated,
@@ -243,15 +245,18 @@ module can_holder_labels_only () {
     // cleat / wall side), below the cleat block -- NOT on the slanted front. Match
     // that: one X-reading face at Y = 0, in the z gap between the base and the
     // cleat. 1.0 uses a fixed ~3.5mm glyph, so do not scale up to text_size here.
+    // Build the cutter from just outside the back face into the solid; a centred
+    // text3d() cutter leaves coplanar fragments on this large triangulated face.
     if (render_text) {
         size  = text_size_min;
         pitch = size * TEXT_LINE_K;
         zt    = labelZTop(len(lines), size, z1 - z0, z0);
 
         for (i = [0 : len(lines) - 1])
-            translate([w / 2, 0, zt - i * pitch])
+            translate([w / 2, d, zt - i * pitch])
                 xrot(90)
-                    text3d(lines[i], size = size, height = text_depth * 2, anchor = CENTER);
+                    linear_extrude(height = d + can_holder_text_epsilon, center = false)
+                        text(lines[i], size = size, halign = "center", valign = "center");
     }
 }
 
