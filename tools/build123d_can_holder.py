@@ -29,7 +29,6 @@ from build123d import (  # noqa: E402
     BuildLine,
     BuildPart,
     BuildSketch,
-    Cone,
     Cylinder,
     Locations,
     Mode,
@@ -92,6 +91,8 @@ class CanHolderGeometry:
     clearance = 2.0
     leadin = 3.0
     fillet_radius = 2.0
+    side_edge_fillet_radius = 1.0
+    bottom_hole_width_extra = 2.0
 
     def __init__(self, params: CanHolderParams):
         params.validate()
@@ -187,11 +188,17 @@ class CanHolderGeometry:
         )
 
     def bore_bottom_extra(self) -> float:
-        # The paired closed/open references are best matched by moving the
-        # blind-bore bottom a short fixed distance down its tilted axis.  This
-        # keeps every open sample's bbox matched while approximating the lower
-        # push-out opening without adding a separate small drain hole.
-        return 6.0 if self.p.bottom == "open" else 0.0
+        # 1.0 hides the blind-bore floor slightly below the clean axis-derived
+        # depth.  The -hole-bottom variant is a separate lower-front push-out
+        # opening, not just a longer tilted bore.
+        return 4.0
+
+    def bottom_hole_center(self) -> tuple[float, float, float]:
+        r = self.bore_diameter() / 2
+        return (self.outer_width() / 2, self.front_y(self.base()) - r, self.base() - 1.0)
+
+    def bottom_hole_length(self) -> float:
+        return self.bore_diameter() + self.bottom_hole_width_extra
 
     def filename(self, output: Path | None) -> Path:
         if output is not None:
@@ -226,6 +233,54 @@ def _long_edge_at(part, width: float, y: float, z: float, tol: float = 1e-4):
     return matches[0]
 
 
+def _cap_edge_near(part, x: float, y: float, z: float, tol: float = 1e-4):
+    best = None
+    for edge in part.edges():
+        bb = edge.bounding_box()
+        if abs(bb.min.X - x) > tol or abs(bb.max.X - x) > tol or edge.length < 0.5:
+            continue
+        cy = (bb.min.Y + bb.max.Y) / 2
+        cz = (bb.min.Z + bb.max.Z) / 2
+        score = (cy - y) ** 2 + (cz - z) ** 2
+        if best is None or score < best[0]:
+            best = (score, edge)
+    if best is None:
+        raise RuntimeError(f"cannot find cap edge near x={x:.4f}, y={y:.4f}, z={z:.4f}")
+    return best[1]
+
+
+def _bore_mouth_edge(part, geo: CanHolderGeometry):
+    import numpy as np
+
+    width = geo.outer_width()
+    r = geo.bore_diameter() / 2
+    axis = np.asarray((0.0, sin(geo.a), cos(geo.a)))
+    center = np.asarray((width / 2, geo.bore_yc(), geo.floor_z()))
+    mouth = center + axis * geo.bore_length()
+
+    best = None
+    for edge in part.edges():
+        bb = edge.bounding_box()
+        dx = bb.max.X - bb.min.X
+        dy = bb.max.Y - bb.min.Y
+        dz = bb.max.Z - bb.min.Z
+        if dx < r or dy < r * 0.5 or dz < 0.1:
+            continue
+        edge_center = np.asarray(
+            [
+                (bb.min.X + bb.max.X) / 2,
+                (bb.min.Y + bb.max.Y) / 2,
+                (bb.min.Z + bb.max.Z) / 2,
+            ]
+        )
+        score = float(np.sum((edge_center - mouth) ** 2))
+        if best is None or score < best[0]:
+            best = (score, edge)
+    if best is None:
+        raise RuntimeError("cannot find bore mouth edge for roundover")
+    return best[1]
+
+
 def _add_body(geo: CanHolderGeometry) -> None:
     width = geo.outer_width()
     profile = geo.side_profile()
@@ -242,6 +297,15 @@ def _add_body(geo: CanHolderGeometry) -> None:
         _long_edge_at(geo_part, width, profile[3][0], profile[3][1]),
     ]
     fillet(rounded_edges, radius=geo.fillet_radius)
+
+    geo_part = BuildPart._get_context().part
+    side_edges = []
+    for x in (0.0, width):
+        for i in (1, 2, 3):
+            p0 = profile[i]
+            p1 = profile[(i + 1) % len(profile)]
+            side_edges.append(_cap_edge_near(geo_part, x, (p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2))
+    fillet(side_edges, radius=geo.side_edge_fillet_radius)
 
     width = geo.outer_width()
     r = geo.bore_diameter() / 2
@@ -264,21 +328,17 @@ def _add_body(geo: CanHolderGeometry) -> None:
             mode=Mode.SUBTRACT,
         )
 
-    cone_base = (
-        cf[0] + axis[0] * (bore_len - geo.leadin),
-        cf[1] + axis[1] * (bore_len - geo.leadin),
-        cf[2] + axis[2] * (bore_len - geo.leadin),
-    )
-    with Locations(cone_base):
-        Cone(
-            r,
-            r + geo.leadin,
-            geo.leadin + 2,
-            rotation=rot,
-            align=(Align.CENTER, Align.CENTER, Align.MIN),
-            mode=Mode.SUBTRACT,
-        )
+    fillet([_bore_mouth_edge(BuildPart._get_context().part, geo)], radius=geo.leadin)
 
+    if geo.p.bottom == "open":
+        with Locations(geo.bottom_hole_center()):
+            Cylinder(
+                r,
+                geo.bottom_hole_length(),
+                rotation=(0, 90, 0),
+                align=(Align.CENTER, Align.CENTER, Align.CENTER),
+                mode=Mode.SUBTRACT,
+            )
 
 
 def _add_male_cleat(geo: CanHolderGeometry) -> None:
