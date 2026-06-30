@@ -2,7 +2,7 @@
 
 对作者原有的 OpenSCAD 组件（`box`, `french_plate`, `screw_plate`, `screw_driver`,
 `wall_anchor`, `grid` + 共享 `nuts.scad` / `labels.scad`）做的审查与修复记录。
-对比基准是各自的 Frenchfinity 1.0 源（`/Volumes/.../FrenchFinity/`）。
+对比基准是各自的 Frenchfinity 1.0 源（本仓库 gitignored 的 `FrenchFinity/`）。
 
 ## 1. 公差（fit tolerance）—— ✅ 无需改
 

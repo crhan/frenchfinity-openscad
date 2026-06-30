@@ -10,7 +10,8 @@
   用法 `tools/stl_diff.py OURS.stl REF.stl [OUT_DIR]`。**这是判「像不像」的首选**，
   别再只靠 bbox 或手调 translate 对齐）。
 - 第一个完整范例：`docs/reverse-engineering-rectangular-tool-holder.md`。
-- 1.0 源文件在 `/Volumes/home/Drive/3D模型/FrenchFinity/`。
+- 1.0 源文件在本仓库的 `FrenchFinity/`（gitignored reference data）。旧 NAS
+  绝对路径已废弃，别再提示或依赖它。
   **目录名可能是简洁版**（`Bit-Holder`、`Tape-Holder`、`Can-Holder`…）而非旧的
   `Bit_Drill+Holder+French+Cleat+Frenchfinity` 长名——用
   `find "$B" -ipath "*关键词*" -iname "*.stl"` 兜底，别硬编码目录名。
@@ -33,6 +34,8 @@ ASCII STL 要先 `openscad -o x.stl --export-format binstl` 转二进制才能�
 
 ## 环境
 
+- Python 依赖统一用 `uv` 管理，运行仓库脚本默认用 `uv run python ...`；不要裸
+  `pip install` 到系统 Python 或随手建不可复现 venv。
 - **BOSL2 子模块默认是空的**。先 `git submodule update --init lib/BOSL2`，否则
   `up/yrot/xrot/left/text3d` 等全是 "unknown module"。
 - **`src/grid.scad` 已补全**（曾长期缺失、git 历史里也没有，`feature="grid"` 旧版会失败）。

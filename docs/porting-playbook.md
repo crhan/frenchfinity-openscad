@@ -4,19 +4,21 @@
 （Rectangular Tool Holder）见 `reverse-engineering-rectangular-tool-holder.md`；
 踩过的雷见根目录 `AGENTS.md`。**做下一个模型时照本手册走。**
 
-1.0 源文件目录：`/Volumes/home/Drive/3D模型/FrenchFinity/`
+1.0 源文件目录：本仓库的 `FrenchFinity/`（gitignored reference data）。旧 NAS
+绝对路径已废弃，别再依赖。
 
 ## 0. 环境（一次性）
 
 ```
 git submodule update --init lib/BOSL2     # 否则 up/yrot/text3d 全是 unknown module
-which openscad                              # 渲染/验证需要 CLI
+which openscad                            # 渲染/验证需要 CLI
+uv run python --version                   # Python 依赖统一由 uv 管理
 ```
 
 ## 1. 抽参数（F3D → User Parameter 名字）
 
 ```
-python3 tools/f3d_inspect.py "<.../某模型文件夹>" --preview /tmp/m.png
+uv run python tools/f3d_inspect.py "FrenchFinity/<某模型文件夹>" --preview /tmp/m.png
 ```
 
 F3D 是 ZIP，`Design*/BulkStream.dat` 里有 ParametricText 明文模板，直接给出**精确
@@ -29,10 +31,10 @@ F3D 是 ZIP，`Design*/BulkStream.dat` 里有 ParametricText 明文模板，直�
 每个 1.0 STL 的文件名都编码了那次的参数取值（`code12.34`），是现成的样本：
 
 ```
-python3 tools/stl_analyze.py regress "<.../某模型文件夹>/*.stl"   # 拟合 bbox 维度=a*参数+b
-python3 tools/stl_analyze.py slice  <one.stl> z 40                 # 某平面的实心截面(ASCII)
-python3 tools/stl_analyze.py planes <one.stl> x                    # 平面特征(壁面)坐标
-python3 tools/stl_analyze.py bbox   <one.stl>
+uv run python tools/stl_analyze.py regress "FrenchFinity/<某模型文件夹>/*.stl" # 拟合 bbox 维度=a*参数+b
+uv run python tools/stl_analyze.py slice  <one.stl> z 40                      # 某平面的实心截面(ASCII)
+uv run python tools/stl_analyze.py planes <one.stl> x                         # 平面特征(壁面)坐标
+uv run python tools/stl_analyze.py bbox   <one.stl>
 ```
 
 R²≈1.0 的回归给出外形尺寸公式（如 `dx = tw + 10`）；用 `slice` 看横截面定位空腔、
