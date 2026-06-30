@@ -46,6 +46,9 @@ can_holder_leadin    = 3;     // 45 deg lead-in chamfer at the bore mouth
 can_holder_fillet    = 2;     // rounding radius on the FRONT + TOP edges (1.0 rounds
                               // these); the BACK / cleat edges stay sharp (joint fit)
 can_holder_drain     = 6;     // drain hole diameter for bottom = "open"
+can_holder_bore_bottom_extra = 4;
+
+function can_holder_label_value (v) = format_fixed(v, 2);
 
 function can_holder_outer_width () =
     can_holder_can_diameter + 2 * can_holder_padding;
@@ -166,8 +169,8 @@ module can_holder_outer_shell () {
                 bottom       = can_holder_side_profile(),
                 height       = w,
                 joint_sides  = [0, 0, f, f, 0],
-                joint_bot    = 0,
-                joint_top    = 0,
+                joint_bot    = f,
+                joint_top    = f,
                 k_sides      = 0.92,
                 splinesteps  = 16
             );
@@ -196,7 +199,8 @@ module can_holder_body () {
         // bore drilled along the tilted axis (leans +Y going up), 45 deg lead-in.
         translate(Cf)
             rotate([-a, 0, 0]) {
-                cylinder(h = L + 2, r = r, $fn = 96);
+                translate([0, 0, -can_holder_bore_bottom_extra])
+                    cylinder(h = L + 2 + can_holder_bore_bottom_extra, r = r, $fn = 96);
                 translate([0, 0, L - cs])
                     cylinder(h = cs + 2, r1 = r, r2 = r + cs, $fn = 96);
             }
@@ -224,28 +228,40 @@ module can_holder_with_nut () {
 module can_holder_labels_only () {
     w    = can_holder_outer_width();
     base = can_holder_base();
+    z0   = base + 2;
+    z1   = can_holder_cleat_bottom() - 2;
 
     lines = [
         final_version_prefix_calculated,
-        str("cd", can_holder_can_diameter),
-        str("pl", can_holder_padding_left),
-        str("ci", can_holder_can_inset),
-        str("p",  can_holder_padding)
+        str("cd", can_holder_label_value(can_holder_can_diameter)),
+        str("pl", can_holder_label_value(can_holder_padding_left)),
+        str("ci", can_holder_label_value(can_holder_can_inset)),
+        str("p",  can_holder_label_value(can_holder_padding))
     ];
 
     // The 1.0 part engraves the parameter labels on the VERTICAL BACK face (the
     // cleat / wall side), below the cleat block -- NOT on the slanted front. Match
     // that: one X-reading face at Y = 0, in the z gap between the base and the
-    // cleat. labelFace floors the glyph at text_size_min and centres the block.
-    labelFace(lines,
-              ["x", w / 2, 0, w, base + 2, can_holder_cleat_bottom() - 2]);
+    // cleat. 1.0 uses a fixed ~3.5mm glyph, so do not scale up to text_size here.
+    if (render_text) {
+        size  = text_size_min;
+        pitch = size * TEXT_LINE_K;
+        zt    = labelZTop(len(lines), size, z1 - z0, z0);
+
+        for (i = [0 : len(lines) - 1])
+            translate([w / 2, 0, zt - i * pitch])
+                xrot(90)
+                    text3d(lines[i], size = size, height = text_depth * 2, anchor = CENTER);
+    }
 }
 
 module can_holder_with_nut_and_text () {
     labels = hintFileName([
         final_version_prefix_calculated,
-        [str("cd", can_holder_can_diameter), str("pl", can_holder_padding_left)],
-        [str("ci", can_holder_can_inset), str("p", can_holder_padding)],
+        [str("cd", can_holder_label_value(can_holder_can_diameter)),
+         str("pl", can_holder_label_value(can_holder_padding_left))],
+        [str("ci", can_holder_label_value(can_holder_can_inset)),
+         str("p", can_holder_label_value(can_holder_padding))],
         str("hole", can_holder_bottom)
     ]);
 
