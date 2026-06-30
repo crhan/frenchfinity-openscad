@@ -29,6 +29,11 @@
 > `joint_sides=[0,0,fillet,fillet,0]` 对前顶/屋脊长边倒圆；背面文字 cutter 改成从 Y=-0.02
 > 穿入 Y=+text_depth 的显式 `linear_extrude(text())`，避免 centered `text3d()` 在背面大平面上留下
 > 共面布尔碎片。
+>
+> 2026-06-30（v2.1 端面复核）：从 X 侧面看，1.0 不是整圈都尖：**底边和背面竖边尖**，
+> **前侧竖边和顶部两段边圆**。BOSL2 `joint_top/bot` 无法只选这几条边，所以新增
+> `can_holder_end_roundover_masks()`：在两个 X 端面只对 profile edge `1/2/3` 做 quarter-round
+> 减材，edge `0/4` 保持直角。
 
 ## 这次（第二轮）查出的真实结构 vs 旧版
 
@@ -93,6 +98,7 @@ outer = BOSL2 rounded_prism(profile, height=width,
                             joint_bot=0, joint_top=0)
         mapped from BOSL2 Z-extrusion back to model X-extrusion
 body  = outer − bore 圆柱(沿轴, rotate([-a,0,0]), bottom_extra=4)
+             − X 端面局部圆角 mask(edge 1/2/3)
              − 45°导入锥 − 可选排水孔
 ```
 
@@ -103,8 +109,11 @@ body  = outer − bore 圆柱(沿轴, rotate([-a,0,0]), bottom_extra=4)
   YZ 侧面轮廓作为 BOSL2 `rounded_prism()` 的 profile，`joint_sides` 按 profile 顶点逐项控制：
   `[back-bottom, front-bottom, front-top, deck-transition, back-top] = [0,0,fillet,fillet,0]`。
   `joint_bot/joint_top` 必须保持 0：BOSL2 只能整体圆端面所有边，不能只圆前侧；全局打开会把
-  背面文字面左右竖边也圆掉。这比 `minkowski()+union()` 更接近 Fusion 的 B-rep 圆角：圆角和
-  尖角在同一个 VNF 中生成，没有两块 CSG 拼出来的台阶/缝。
+  背面文字面左右竖边也圆掉。端面局部圆角另走 `can_holder_end_roundover_masks()`：两个 X 端面
+  只对 profile edge `1=front`、`2=sloped roof`、`3=back deck` 做 quarter-round 减材，edge
+  `0=bottom` 和 `4=back` 不动，对齐侧视图里「左/上圆，右/下尖」的 1.0 结构。长边圆角仍由
+  `rounded_prism()` 在同一个 VNF 中生成；端面局部圆角是独立减材 mask，范围只覆盖 X 端面附近，
+  不再误伤背面文字面。
 - **bore 底部不是球头**：试过球头会把 volume ratio 从约 0.956 拉坏到约 0.918。1.0 更像是
   同一根斜圆柱沿轴向下多切一点，让平底 cap 藏到更深处；当前 `can_holder_bore_bottom_extra=4`
   后，代码对比 p95 从约 1.42 降到约 1.28，max 从约 4.47 降到约 3.17，水平截面里的平切线消失。
@@ -171,13 +180,14 @@ v2.1 继续用 surface diff 追踪局部圆角/文字/孔底差异；文字回�
 - `generated_stl/review/Can-Holder.v2.1.diff.txt`
 - `generated_stl/review/Can-Holder.v2.1.official-diff.txt`
 - `generated_stl/review/Can-Holder.v2.1.back-preview.png`
+- `generated_stl/review/Can-Holder.v2.1.side-cap-overlay.png`
 - `generated_stl/review/Can-Holder.v2.1.x-sections.png`
 - `generated_stl/review/Can-Holder.v2.1.z-sections.png`
 
 `official-diff.txt` 来自项目首选 `tools/stl_diff.py`：bbox Δ `[+0.00,-0.01,+0.00]`，
-volume ratio `0.938`，`ours→ref` mean/p95/max =
-`0.465/0.836/2.808mm`，`ref→ours` mean/p95/max = `0.452/0.809/1.941mm`，
-symmetric Hausdorff `2.808mm`，`60.6%` surface within `0.50mm`，脚本判定 `CLOSE`。
+volume ratio `0.933`，`ours→ref` mean/p95/max =
+`0.457/0.877/2.796mm`，`ref→ours` mean/p95/max = `0.445/0.861/1.994mm`，
+symmetric Hausdorff `2.796mm`，`64.0%` surface within `0.50mm`，脚本判定 `CLOSE`。
 剩余热点集中在背面顶部文字/cleat 附近（extra，z≈63）和背面低位孔/文字附近（missing，z≈21-34）。
 
 ## 卯榫配合验证（2026-06-29，求交集实测，已通过）

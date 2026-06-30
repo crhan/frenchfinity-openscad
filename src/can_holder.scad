@@ -48,6 +48,7 @@ can_holder_fillet    = 2;     // rounding radius on the FRONT + TOP edges (1.0 r
 can_holder_drain     = 6;     // drain hole diameter for bottom = "open"
 can_holder_bore_bottom_extra = 4;
 can_holder_text_epsilon = 0.02;
+can_holder_end_roundover_excess = 0.05;
 
 function can_holder_label_value (v) = format_fixed(v, 2);
 
@@ -150,6 +151,61 @@ function can_holder_side_profile () =
         [0,                        H]
     ];
 
+function can_holder_roundover_mask2d (r, steps = 16) =
+    concat(
+        [[0, 0]],
+        [for (i = [0 : steps])
+            let (a = -90 - 90 * i / steps)
+            [r + r * cos(a), r + r * sin(a)]]
+    );
+
+function can_holder_profile_outward_normal (p0, p1) =
+    let (dy = p1[0] - p0[0], dz = p1[1] - p0[1], l = norm([dy, dz]))
+    [0, dz / l, -dy / l];
+
+module can_holder_edge_roundover_mask (p0, p1, outward_cap, outward_side, r) {
+    eps = can_holder_end_roundover_excess;
+    edge = p1 - p0;
+    e    = unit(edge);
+    u    = -outward_cap;   // inward from the X end cap
+    v    = -outward_side;  // inward from the adjacent side/top/front face
+    mid  = (p0 + p1) / 2;
+
+    multmatrix([
+        [u[0], v[0], e[0], mid[0]],
+        [u[1], v[1], e[1], mid[1]],
+        [u[2], v[2], e[2], mid[2]],
+        [0,    0,    0,    1]
+    ])
+        linear_extrude(height = norm(edge) + 2 * eps, center = true, convexity = 4)
+            polygon(can_holder_roundover_mask2d(r));
+}
+
+module can_holder_end_roundover_masks () {
+    w = can_holder_outer_width();
+    r = can_holder_fillet;
+    p = can_holder_side_profile();
+
+    // End-cap perimeter is selective: the 1.0 side view rounds the front/left
+    // edge and the top edges, while the back/right and bottom edges stay sharp.
+    // Profile edges: 0=bottom, 1=front, 2=sloped roof, 3=back deck, 4=back.
+    for (x = [0, w])
+        for (i = [1, 2, 3])
+            let (
+                p0 = p[i],
+                p1 = p[(i + 1) % len(p)],
+                cap_n = x < w / 2 ? [-1, 0, 0] : [1, 0, 0],
+                side_n = can_holder_profile_outward_normal(p0, p1)
+            )
+                can_holder_edge_roundover_mask(
+                    [x, p0[0], p0[1]],
+                    [x, p1[0], p1[1]],
+                    cap_n,
+                    side_n,
+                    r
+                );
+}
+
 // The outer body is a side profile extruded along X.  Use BOSL2 rounded_prism()
 // so edge roundovers are native VNF geometry, not CSG patchwork.  The joint_sides
 // entries correspond to the profile vertices above: back-bottom, front-bottom,
@@ -196,6 +252,7 @@ module can_holder_body () {
     // edges, sharp back/cleat edges, and no union seam between those treatments.
     difference () {
         can_holder_outer_shell();
+        can_holder_end_roundover_masks();
 
         // bore drilled along the tilted axis (leans +Y going up), 45 deg lead-in.
         translate(Cf)
