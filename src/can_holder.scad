@@ -136,46 +136,41 @@ function can_holder_cleat_origin () =
 function can_holder_cleat_bottom () =
     can_holder_height() - 2 * frenchfinity_1_0_slot_distance_top;
 
-// The sharp convex solid (no bore), shrunk uniformly by `inset` on the FRONT, TOP,
-// SIDE and BACK faces and lifted off the base by `inset`. With inset = 0 it is the
-// nominal block; with inset = fillet it is the body a sphere-minkowski of radius
-// fillet grows back to nominal while rounding every convex edge. (It is a convex
-// polytope, so the minkowski is cheap.)
-module can_holder_solid (inset = 0) {
-    w     = can_holder_outer_width();
-    a     = can_holder_angle;
-    H     = can_holder_height();
-    D     = can_holder_depth();
-    pl    = can_holder_padding_left;
-    big   = 2000;
+function can_holder_side_profile () =
+    let (H = can_holder_height(), pl = can_holder_padding_left)
+    [
+        [0,                        0],
+        [can_holder_front_y(0),    0],
+        [can_holder_front_max(),   can_holder_fronttop_z()],
+        [pl,                       H],
+        [0,                        H]
+    ];
 
-    // front-top corner (front plane ∩ roof plane) and deck edge (roof ∩ flat cap):
-    P_front = [w / 2, can_holder_front_max(), can_holder_fronttop_z()];  // front-top
-    P_roof  = [w / 2, pl, H];                                            // deck edge
+// The outer body is a side profile extruded along X.  Use BOSL2 rounded_prism()
+// so edge roundovers are native VNF geometry, not CSG patchwork.  The joint_sides
+// entries correspond to the profile vertices above: back-bottom, front-bottom,
+// front-top, deck/front-roof transition, back-top.  Only the front/top vertices
+// are rounded; the cleat-side back edges stay sharp for wall fit.
+module can_holder_outer_shell () {
+    w = can_holder_outer_width();
+    f = can_holder_fillet;
 
-    intersection () {
-        // (1) footprint prism, capped flat at H (the deck). Inset in X (both sides),
-        // off the back (Y) and off the base (z); cap at H - inset so the minkowski
-        // lifts everything back to nominal.
-        translate([inset, inset, inset])
-            linear_extrude(H - 2 * inset)
-                square([w - 2 * inset, D]);
-
-        // (2) keep BEHIND the front plane (∥ bore axis through the front-top corner,
-        // leans +Y going up), pulled in `inset` along its normal (0,cos a,-sin a).
-        translate(P_front - inset * [0, cos(a), -sin(a)])
-            rotate([-a, 0, 0])
-                translate([-big / 2, -big, -big / 2])
-                    cube(big);
-
-        // (3) keep BELOW the roof plane (⊥ bore axis through the deck edge (pl,H)),
-        // pulled in `inset` along its normal (0,sin a,cos a). Where the roof rises
-        // above the flat cap (Y < pl) the cap wins -> flat deck `pl` deep.
-        translate(P_roof - inset * [0, sin(a), cos(a)])
-            rotate([-a, 0, 0])
-                translate([-big / 2, -big / 2, -big])
-                    cube(big);
-    }
+    translate([w / 2, 0, 0])
+        multmatrix([
+            [0, 0, 1, 0],   // BOSL2 extrusion Z -> model X
+            [1, 0, 0, 0],   // BOSL2 profile X   -> model Y
+            [0, 1, 0, 0],   // BOSL2 profile Y   -> model Z
+            [0, 0, 0, 1]
+        ])
+            rounded_prism(
+                bottom       = can_holder_side_profile(),
+                height       = w,
+                joint_sides  = [0, 0, f, f, 0],
+                joint_bot    = 0,
+                joint_top    = 0,
+                k_sides      = 0.92,
+                splinesteps  = 16
+            );
 }
 
 module can_holder_body () {
@@ -185,8 +180,6 @@ module can_holder_body () {
     base  = can_holder_base();
     fil   = can_holder_fillet;
     cs    = can_holder_leadin;
-    big   = 2000;
-
     yc0   = can_holder_bore_yc();
     zf    = can_holder_floor_z();
     Cf    = [w / 2, yc0, zf];                  // bore floor centre
@@ -195,23 +188,10 @@ module can_holder_body () {
     // (roof through (pl,H), normal = bore axis), so the bore exits flush at the roof.
     L     = sin(a) * (can_holder_padding_left - yc0) + cos(a) * (H - zf);
 
-    // ONE merged solid, rounded as a WHOLE so the fillet is CONTINUOUS everywhere
-    // (no seam). CSG can't taper a fillet to a runout the way Fusion does, so any
-    // boundary between a sharp and a rounded edge leaves a step; the only way to be
-    // step-free is to round the whole thing uniformly. (An earlier build kept the
-    // back sharp by unioning a sharp piece, which always left a step/notch where it
-    // met the rounded part -- a method problem, not a thickness one.) The back FACE
-    // stays flat (minkowski grow + solid inset cancel on flat faces) so the cleat
-    // still seats flat; only the back convex edges pick up the same ~fil round.
+    // One BOSL2 VNF shell with selective edge roundovers: rounded front/top
+    // edges, sharp back/cleat edges, and no union seam between those treatments.
     difference () {
-        // all convex edges rounded by `fil`; base cut flat & printable (z >= 0).
-        intersection () {
-            minkowski () {
-                can_holder_solid(fil);
-                sphere(r = fil, $fn = 16);
-            }
-            translate([-big / 2, -big / 2, 0]) cube(big);     // z >= 0
-        }
+        can_holder_outer_shell();
 
         // bore drilled along the tilted axis (leans +Y going up), 45 deg lead-in.
         translate(Cf)

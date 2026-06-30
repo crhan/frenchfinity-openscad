@@ -40,6 +40,10 @@ ASCII STL 要先 `openscad -o x.stl --export-format binstl` 转二进制才能�
   `grid_inner_wall_thickness` / `grid_outer_wall_thickness`，对齐 1.0）。
 - OpenSCAD CLI 默认导出 **ASCII STL**；要二进制加 `--export-format binstl`
   （自写的二进制解析器才能读）。
+- 本机 OpenSCAD 2026.06.12 的默认 arm64 CLI 可能直接报
+  `Incompatible processor. This Qt build requires the following features: neon`；验证时用
+  `arch -x86_64 /Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD ...`（或临时 PATH wrapper）
+  跑 CLI。
 - 无法设置导出文件名：靠 `hintFileName()` 打 `ECHO: "filename proposal:"`，手动重命名。
 
 ## 配合公差（French cleat 卯榫）—— 别让打印件卡死
