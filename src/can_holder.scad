@@ -178,25 +178,6 @@ module can_holder_solid (inset = 0) {
     }
 }
 
-// The sharp back edges to UNION back onto the rounded body: the two back vertical
-// edges (cleat side) and the back-top edge. Built by intersecting the SHARP nominal
-// solid with thin boxes hugging just those edges; reach `e` covers the rounded
-// region (> fil) with a small margin. The boxes' inner faces sit inside the solid,
-// so the union leaves no surface seam -- it just makes those edges crisp again.
-module can_holder_back_sharp () {
-    w = can_holder_outer_width();
-    H = can_holder_height();
-    e = can_holder_fillet + 0.6;
-    intersection () {
-        can_holder_solid(0);
-        union () {
-            translate([-1,     -1, -1]) cube([e + 1, e + 1, H + 2]);   // back-left vertical
-            translate([w - e,  -1, -1]) cube([e + 1, e + 1, H + 2]);   // back-right vertical
-            translate([-1,     -1, H - e]) cube([w + 2, e + 1, e + 2]); // back-top edge
-        }
-    }
-}
-
 module can_holder_body () {
     w     = can_holder_outer_width();
     a     = can_holder_angle;
@@ -214,24 +195,22 @@ module can_holder_body () {
     // (roof through (pl,H), normal = bore axis), so the bore exits flush at the roof.
     L     = sin(a) * (can_holder_padding_left - yc0) + cos(a) * (H - zf);
 
-    // SELECTIVE rounding to match 1.0: round the FRONT + TOP edges, keep the BACK
-    // (cleat-side) vertical edges + back-top edge SHARP, all as ONE continuous body
-    // (no seam). Round the whole solid with a sphere-minkowski, then UNION back the
-    // sharp back edges via thin boxes that hug only those edges -- their inward clip
-    // faces are buried INSIDE the solid, so (unlike the old Y<=kb slab whose boundary
-    // cut across the side-top/bottom edges and left a step) there is no surface seam.
+    // ONE merged solid, rounded as a WHOLE so the fillet is CONTINUOUS everywhere
+    // (no seam). CSG can't taper a fillet to a runout the way Fusion does, so any
+    // boundary between a sharp and a rounded edge leaves a step; the only way to be
+    // step-free is to round the whole thing uniformly. (An earlier build kept the
+    // back sharp by unioning a sharp piece, which always left a step/notch where it
+    // met the rounded part -- a method problem, not a thickness one.) The back FACE
+    // stays flat (minkowski grow + solid inset cancel on flat faces) so the cleat
+    // still seats flat; only the back convex edges pick up the same ~fil round.
     difference () {
-        union () {
-            // all convex edges rounded by `fil`; base cut flat & printable (z >= 0).
-            intersection () {
-                minkowski () {
-                    can_holder_solid(fil);
-                    sphere(r = fil, $fn = 16);
-                }
-                translate([-big / 2, -big / 2, 0]) cube(big);     // z >= 0
+        // all convex edges rounded by `fil`; base cut flat & printable (z >= 0).
+        intersection () {
+            minkowski () {
+                can_holder_solid(fil);
+                sphere(r = fil, $fn = 16);
             }
-            // restore sharp back vertical + back-top edges (seamless, see above).
-            can_holder_back_sharp();
+            translate([-big / 2, -big / 2, 0]) cube(big);     // z >= 0
         }
 
         // bore drilled along the tilted axis (leans +Y going up), 45 deg lead-in.
